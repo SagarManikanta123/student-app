@@ -1,112 +1,78 @@
 import streamlit as st
-from datetime import datetime
+import requests
+import json
+import re
 
-# Initialize session state if not already initialized
-if 'user_id' not in st.session_state:
-    st.session_state.user_id = None
-    st.session_state.tasks = []
-    st.session_state.notification_count = 0
-    st.session_state.login_error = None
+st.set_page_config(page_title="AI App Factory for Students", page_icon="⚙️", layout="wide")
 
-def validate_user(email, password):
-    # Dummy validation for demonstration purposes
-    return email == "user@example.com" and password == "password"
+st.title("⚙️ AI App Factory")
+st.caption("Enter a description to build and test a custom student tool.")
 
-def add_task(title, description, due_date, priority):
-    task_id = len(st.session_state.tasks) + 1
-    new_task = {
-        "id": task_id,
-        "title": title,
-        "description": description,
-        "due_date": due_date,
-        "priority": priority,
-        "status": False,
-        "created_at": datetime.now()
+# Sidebar for configuration
+with st.sidebar:
+    st.header("Factory Settings")
+    api_key = st.text_input("Groq API Key (Free)", type="password", help="Get a free key from console.groq.com")
+    st.markdown("[Get a free Groq API key here](https://console.groq.com/keys)")
+    st.markdown("---")
+    st.markdown("**Pipeline Brains:**")
+    st.markdown("1. 🧠 **Architect:** DeepSeek-R1-Distill")
+    st.markdown("2. ⚡ **Builder:** Qwen 2.5 Coder 32B")
+
+prompt = st.text_area("What tool do you want to build?", placeholder="e.g., A C code generator with syntax explanations and copyable snippets.")
+
+def query_groq(prompt_text, system_instruction, model, key):
+    headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": system_instruction},
+            {"role": "user", "content": prompt_text}
+        ],
+        "temperature": 0.6
     }
-    st.session_state.tasks.append(new_task)
-
-def get_pending_tasks():
-    return [task for task in st.session_state.tasks if not task['status']]
-
-def show_login_page():
-    st.subheader("Login")
-    
-    email = st.text_input("Email")
-    password = st.text_input("Password", type="password")
-    
-    if st.button("Login"):
-        # Validate credentials
-        if validate_user(email, password):
-            st.session_state.user_id = email
-            st.success("Logged in successfully!")
-            time.sleep(1)
-            st.experimental_rerun()
-        else:
-            st.error("Invalid credentials!")
-
-    st.subheader("Need an account?")
-    if st.button("Sign Up"):
-        show_signup_page()
-
-def show_signup_page():
-    # Form fields for email, password, confirm password
-    # Add validation and store new user in memory
-    pass
-
-def show_dashboard():
-    st.sidebar.title("Menu")
-    if st.sidebar.button("Dashboard"):
-        pass
-    if st.sidebar.button("My Tasks"):
-        show_tasks_page()
-    if st.sidebar.button("Notifications"):
-        show_notifications()
-    if st.sidebar.button("Profile"):
-        show_profile()
-
-def show_tasks_page():
-    # Display task creation form and task list
-    with st.form(key='task_form'):
-        title = st.text_input('Title')
-        description = st.text_area('Description', max_chars=200)
-        due_date = st.date_input('Due Date')
-        priority = st.selectbox('Priority', ['High', 'Medium', 'Low'])
-        create_task_button = st.form_submit_button(label='Create Task')
-
-    if create_task_button:
-        add_task(title, description, due_date, priority)
-
-    st.subheader("Pending Tasks")
-    for task in get_pending_tasks():
-        with st.container():
-            st.write(f"**{task['title']}** - {task['description']}")
-            st.write(f"Due Date: {task['due_date']}, Priority: {task['priority']}")
-            if st.checkbox('Completed', value=task['status']):
-                task['status'] = True
-            st.button('Delete', on_click=lambda t=task: delete_task(t))
-
-def show_notifications():
-    # Check for overdue tasks
-    today = datetime.today().date()
-    for task in get_pending_tasks():
-        if task["due_date"] <= today:
-            st.warning(f"Task '{task['title']}' is overdue!")
-
-def show_profile():
-    # Display user details and edit profile form
-    pass
-
-def delete_task(task):
-    st.session_state.tasks.remove(task)
-
-def main():
-    st.title("AI Task Reminder")
-    
-    # Check if user is logged in
-    if "user_id" not in st.session_state:
-        show_login_page()
+    res = requests.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=payload)
+    if res.status_code == 200:
+        return res.json()["choices"][0]["message"]["content"]
     else:
-        show_dashboard()
+        st.error(f"Error {res.status_code}: {res.text}")
+        return None
 
-if __name__ == "__main__":
-    main()
+if st.button("🚀 Run AI Factory", type="primary"):
+    if not api_key:
+        st.warning("Please provide a Groq API Key in the left sidebar to power the factory.")
+    elif not prompt.strip():
+        st.warning("Please describe what student app you want to create.")
+    else:
+        status = st.status("🏭 Factory running: Starting Brain Pipeline...", expanded=True)
+        
+        # Brain 1: Architect
+        status.write("🧠 **Brain 1 (Architect - DeepSeek):** Designing system architecture and UI blueprint...")
+        arch_prompt = f"Design a simple, single-page Streamlit educational web app for this goal: '{prompt}'. Provide clean component specifications and logic."
+        arch_spec = query_groq(arch_prompt, "You are a software architect.", "deepseek-r1-distill-llama-70b", api_key)
+        
+        if arch_spec:
+            # Brain 2: Builder
+            status.write("⚡ **Brain 2 (Builder - Qwen Coder):** Writing clean Streamlit code...")
+            build_prompt = f"Based on this specification:\n{arch_spec}\n\nWrite valid, standalone Streamlit Python code. Return ONLY pure python code inside a single ```python ``` code block. Do not add markdown text outside the code block."
+            raw_code = query_groq(build_prompt, "You are an expert Streamlit and Python developer.", "qwen-2.5-coder-32b", api_key)
+            
+            if raw_code:
+                # Clean markdown blocks
+                code_match = re.search(r"```python(.*?)```", raw_code, re.DOTALL)
+                clean_code = code_match.group(1).strip() if code_match else raw_code.strip()
+                
+                status.update(label="✅ App Generated Successfully!", state="complete", expanded=False)
+                
+                tab1, tab2 = st.tabs(["💻 Generated Code", "▶️ Run Preview"])
+                
+                with tab1:
+                    st.code(clean_code, language="python")
+                    st.download_button("📥 Download App (.py)", data=clean_code, file_name="generated_app.py", mime="text/plain")
+                
+                with tab2:
+                    st.info("Running live app code below:")
+                    try:
+                        exec_scope = {}
+                        exec(clean_code, exec_scope)
+                    except Exception as e:
+                        st.error(f"Error running generated app: {e}")
