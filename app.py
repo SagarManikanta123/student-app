@@ -20,19 +20,20 @@ with st.sidebar:
     st.markdown("[Get a free Groq API key here](https://console.groq.com/keys)")
     st.markdown("---")
     
-    # Text-only model candidates
-    default_models = ["openai/gpt-oss-20b", "openai/gpt-oss-120b"]
+    default_models = ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b"]
     models = default_models
     
     if api_key:
         try:
             m_res = requests.get(
                 "https://api.groq.com/openai/v1/models",
-                headers={"Authorization": f"Bearer {api_key}"},
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+                },
                 timeout=5
             )
             if m_res.status_code == 200:
-                # Filter out voice, audio, or moderation models
                 fetched = [
                     m["id"] for m in m_res.json().get("data", [])
                     if not any(bad in m["id"].lower() for bad in ["whisper", "guard", "orpheus", "tts", "audio", "canopy"])
@@ -44,15 +45,16 @@ with st.sidebar:
 
     st.markdown("**Pipeline Brains:**")
     arch_model = st.selectbox("Architect Brain", models, index=0)
-    build_model = st.selectbox("Builder Brain", models, index=0)
+    build_model = st.selectbox("Builder Brain", models, index=min(1, len(models) - 1))
 
-prompt = st.text_area("What tool do you want to build?", placeholder="e.g. I need an AI for C programs and reminders")
+prompt = st.text_area("What tool do you want to build?", placeholder="e.g. A C programming cheat sheet and syntax builder with copyable snippets")
 
 def call_llm(prompt_text, system_instruction, model, key):
     clean_k = sanitize_text(key)
     headers = {
         "Authorization": f"Bearer {clean_k}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
     }
     payload = {
         "model": model,
