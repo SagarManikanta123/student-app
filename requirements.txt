@@ -1,2 +1,7 @@
 streamlit
 requests
+sympy
+numpy
+matplotlib
+plotly
+pandas
