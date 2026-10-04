@@ -20,36 +20,19 @@ with st.sidebar:
     st.markdown("[Get a free Groq API key here](https://console.groq.com/keys)")
     st.markdown("---")
     
-    default_models = ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b"]
-    models = default_models
-    
-    if api_key:
-        try:
-            m_res = requests.get(
-                "https://api.groq.com/openai/v1/models",
-                headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-                },
-                timeout=5
-            )
-            if m_res.status_code == 200:
-                fetched = [
-                    m["id"] for m in m_res.json().get("data", [])
-                    if not any(bad in m["id"].lower() for bad in ["whisper", "guard", "orpheus", "tts", "audio", "canopy"])
-                ]
-                if fetched:
-                    models = fetched
-        except Exception:
-            pass
+    # High-capacity reliable models on Groq
+    supported_models = [
+        "openai/gpt-oss-20b",
+        "openai/gpt-oss-120b"
+    ]
 
     st.markdown("**Pipeline Brains:**")
-    arch_model = st.selectbox("Architect Brain", models, index=0)
-    build_model = st.selectbox("Builder Brain", models, index=min(1, len(models) - 1))
+    arch_model = st.selectbox("Architect Brain", supported_models, index=0)
+    build_model = st.selectbox("Builder Brain", supported_models, index=0)
 
-prompt = st.text_area("What tool do you want to build?", placeholder="e.g. A C programming cheat sheet and syntax builder with copyable snippets")
+prompt = st.text_area("What tool do you want to build?", placeholder="e.g. make an AI which asks for a 3D figure name and renders it")
 
-def call_llm(prompt_text, system_instruction, model, key):
+def call_llm(prompt_text, system_instruction, model, key, max_tok=1500):
     clean_k = sanitize_text(key)
     headers = {
         "Authorization": f"Bearer {clean_k}",
@@ -62,7 +45,8 @@ def call_llm(prompt_text, system_instruction, model, key):
             {"role": "system", "content": system_instruction},
             {"role": "user", "content": prompt_text}
         ],
-        "temperature": 0.5
+        "temperature": 0.3,
+        "max_tokens": max_tok
     }
     try:
         res = requests.post(
@@ -88,14 +72,16 @@ if st.button("Run AI Factory", type="primary"):
     else:
         status = st.status("Factory running: Starting Brain Pipeline...", expanded=True)
         
+        # Brain 1: Compact Blueprint
         status.write(f"Brain 1 (Architect - {arch_model}): Designing UI blueprint...")
-        arch_prompt = f"Design a simple, single-page Streamlit educational web app for this goal: '{prompt}'. Provide clean component specifications and logic."
-        arch_spec = call_llm(arch_prompt, "You are a software architect.", arch_model, api_key)
+        arch_prompt = f"Design a concise Streamlit app specification for: '{prompt}'. Keep it under 200 words focusing on components and layout."
+        arch_spec = call_llm(arch_prompt, "You are a concise software architect.", arch_model, api_key, max_tok=600)
         
         if arch_spec:
+            # Brain 2: Streamlit Code
             status.write(f"Brain 2 (Builder - {build_model}): Writing clean Streamlit code...")
-            build_prompt = f"Based on this specification:\n{arch_spec}\n\nWrite valid, standalone Streamlit Python code. Return ONLY pure python code inside a single ```python ``` code block. Do not add markdown explanation outside the code block."
-            raw_code = call_llm(build_prompt, "You are an expert Streamlit and Python developer.", build_model, api_key)
+            build_prompt = f"Build a working Streamlit app for this specification:\n{arch_spec}\n\nReturn ONLY the python code inside a single ```python ``` block. Include necessary imports."
+            raw_code = call_llm(build_prompt, "You are an expert Streamlit developer. Return only code.", build_model, api_key, max_tok=1800)
             
             if raw_code:
                 code_match = re.search(r"```python(.*?)```", raw_code, re.DOTALL)
