@@ -21,10 +21,10 @@ def extract_clean_code(text):
         return match.group(1).strip()
     return text.strip()
 
-# Reliable, high-token models on Groq
+# Standard, fast Groq models
 VALID_MODELS = [
-    "openai/gpt-oss-20b",
-    "openai/gpt-oss-120b"
+    "llama-3.3-70b-versatile",
+    "llama-3.1-8b-instant"
 ]
 
 with st.sidebar:
@@ -37,7 +37,7 @@ with st.sidebar:
     st.markdown("**Engine Settings:**")
     selected_model = st.selectbox("AI Model", VALID_MODELS, index=0)
 
-def call_groq(messages, model, key, max_tok=2500, temp=0.3):
+def call_groq(messages, model, key, max_tok=1800, temp=0.2):
     clean_k = sanitize_text(key)
     headers = {
         "Authorization": f"Bearer {clean_k}",
@@ -55,13 +55,16 @@ def call_groq(messages, model, key, max_tok=2500, temp=0.3):
             "https://api.groq.com/openai/v1/chat/completions",
             headers=headers,
             json=payload,
-            timeout=90
+            timeout=25
         )
         if res.status_code == 200:
             return res.json()["choices"][0]["message"]["content"]
         else:
             st.error(f"API Error {res.status_code}: {res.text}")
             return None
+    except requests.exceptions.Timeout:
+        st.error("Request timed out after 25 seconds. Please try again.")
+        return None
     except Exception as exc:
         st.error(f"Connection failed: {exc}")
         return None
@@ -74,7 +77,7 @@ if "chat_history" not in st.session_state:
 
 user_request = st.text_area(
     "What AI tool do you want to create?",
-    placeholder="e.g. An AI that solves and plots math equations, explains theory doubts, or converts notes into clean summaries"
+    placeholder="e.g. create an AI which can decode C codes and explain them point to point in bullet points"
 )
 
 if st.button("Build AI Tool", type="primary"):
@@ -97,7 +100,7 @@ if st.button("Build AI Tool", type="primary"):
                 [{"role": "user", "content": architect_prompt}],
                 selected_model,
                 api_key,
-                max_tok=1000,
+                max_tok=800,
                 temp=0.2
             )
             
@@ -111,7 +114,7 @@ if st.button("Build AI Tool", type="primary"):
                     [{"role": "user", "content": code_prompt}],
                     selected_model,
                     api_key,
-                    max_tok=2500,
+                    max_tok=1800,
                     temp=0.2
                 )
                 
@@ -148,14 +151,13 @@ if st.session_state.configured_app:
             with st.chat_message("user"):
                 st.markdown(user_input)
             
-            # Run the query through the custom configured AI
             with st.chat_message("assistant"):
                 with st.spinner("Processing..."):
                     messages = [{"role": "system", "content": app_info["system_prompt"]}]
                     for m in st.session_state.chat_history:
                         messages.append({"role": m["role"], "content": m["content"]})
                     
-                    reply = call_groq(messages, selected_model, api_key, max_tok=2500, temp=0.4)
+                    reply = call_groq(messages, selected_model, api_key, max_tok=1800, temp=0.3)
                     if reply:
                         st.markdown(reply)
                         st.session_state.chat_history.append({"role": "assistant", "content": reply})
