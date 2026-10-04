@@ -13,6 +13,28 @@ def sanitize_text(text):
         return ""
     return "".join(c for c in text.strip() if 32 <= ord(c) <= 126)
 
+def extract_clean_code(text):
+    if not text:
+        return ""
+    # Check for markdown code blocks
+    match = re.search(r"```(?:python)?\s*(.*?)\s*```", text, re.DOTALL | re.IGNORECASE)
+    if match:
+        code = match.group(1).strip()
+    else:
+        # If no markdown fences, remove any conversational lines before the first import/def
+        lines = text.strip().splitlines()
+        code_lines = []
+        started = False
+        for line in lines:
+            if re.match(r"^\s*(import|from|st\.|def|class|#)", line):
+                started = True
+            if started:
+                code_lines.append(line)
+        code = "\n".join(code_lines) if code_lines else text.strip()
+    
+    # Strip any stray backticks that could break exec
+    return re.sub(r"^```.*$", "", code, flags=re.MULTILINE).strip()
+
 with st.sidebar:
     st.header("Factory Settings")
     raw_key = st.text_input("Groq API Key", type="password")
@@ -29,7 +51,7 @@ with st.sidebar:
     arch_model = st.selectbox("Architect Brain", supported_models, index=0)
     build_model = st.selectbox("Builder Brain", supported_models, index=0)
 
-prompt = st.text_area("What tool do you want to build?", placeholder="e.g. build an AI which draws graphs based on equations given by user in text form")
+prompt = st.text_area("What tool do you want to build?", placeholder="e.g. make an AI that draws graphs when user gives input equations")
 
 def call_llm(prompt_text, system_instruction, model, key, max_tok=3500):
     clean_k = sanitize_text(key)
@@ -49,7 +71,7 @@ def call_llm(prompt_text, system_instruction, model, key, max_tok=3500):
     }
     try:
         res = requests.post(
-            "https://api.groq.com/openai/v1/chat/completions",
+            "[https://api.groq.com/openai/v1/chat/completions](https://api.groq.com/openai/v1/chat/completions)",
             headers=headers,
             json=payload,
             timeout=90
@@ -73,7 +95,7 @@ if st.button("Run AI Factory", type="primary"):
         
         # Brain 1: Architecture Blueprint
         status.write(f"Brain 1 (Architect - {arch_model}): Designing UI blueprint...")
-        arch_prompt = f"Design a concise Streamlit app specification for: '{prompt}'. Focus on clear inputs, straightforward evaluation using numpy or sympy, and clean plotting using matplotlib."
+        arch_prompt = f"Design a concise Streamlit app specification for: '{prompt}'. Focus on clear inputs, evaluating math functions, and rendering with matplotlib."
         arch_spec = call_llm(arch_prompt, "You are a concise software architect.", arch_model, api_key, max_tok=500)
         
         if arch_spec:
@@ -81,16 +103,16 @@ if st.button("Run AI Factory", type="primary"):
             status.write(f"Brain 2 (Builder - {build_model}): Writing clean Streamlit code...")
             build_prompt = (
                 f"Build a complete, standalone, bug-free Streamlit Python app based on this specification:\n{arch_spec}\n\n"
-                "CRITICAL RULES:\n"
-                "1. If plotting is required, use 'matplotlib.pyplot' with 'st.pyplot(fig)' to ensure stability.\n"
-                "2. Ensure all brackets, strings, and parentheses are properly closed.\n"
-                "3. Return ONLY executable python code wrapped in a single ```python ``` block. No conversational text."
+                "CRITICAL INSTRUCTIONS:\n"
+                "1. Output ONLY executable Python code starting directly with imports.\n"
+                "2. Do NOT write any introduction or explanation text before or after the code.\n"
+                "3. Use 'matplotlib.pyplot' and 'st.pyplot(fig)' for plotting.\n"
+                "4. Enclose all code within a single ```python ``` block."
             )
-            raw_code = call_llm(build_prompt, "You are an expert Python and Streamlit developer. Output only valid code.", build_model, api_key, max_tok=3500)
+            raw_code = call_llm(build_prompt, "You are a pure Python code generator. Do not provide conversational filler.", build_model, api_key, max_tok=3500)
             
             if raw_code:
-                code_match = re.search(r"```python(.*?)```", raw_code, re.DOTALL)
-                clean_code = code_match.group(1).strip() if code_match else raw_code.strip()
+                clean_code = extract_clean_code(raw_code)
                 
                 status.update(label="App Generated Successfully!", state="complete", expanded=False)
                 
