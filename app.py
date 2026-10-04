@@ -21,12 +21,6 @@ def extract_clean_code(text):
         return match.group(1).strip()
     return text.strip()
 
-# Standard, fast Groq models
-VALID_MODELS = [
-    "llama-3.3-70b-versatile",
-    "llama-3.1-8b-instant"
-]
-
 with st.sidebar:
     st.header("Factory Settings")
     raw_key = st.text_input("Groq API Key", type="password")
@@ -34,8 +28,30 @@ with st.sidebar:
     st.markdown("[Get a free Groq API key here](https://console.groq.com/keys)")
     st.markdown("---")
     
+    # Dynamically fetch available models directly from your key
+    available_models = ["llama-3.1-8b-instant"]
+    if api_key:
+        try:
+            m_res = requests.get(
+                "https://api.groq.com/openai/v1/models",
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+                },
+                timeout=10
+            )
+            if m_res.status_code == 200:
+                fetched = [
+                    m["id"] for m in m_res.json().get("data", [])
+                    if not any(bad in m["id"].lower() for bad in ["whisper", "guard", "orpheus", "tts", "audio", "canopy", "safeguard"])
+                ]
+                if fetched:
+                    available_models = fetched
+        except Exception:
+            pass
+
     st.markdown("**Engine Settings:**")
-    selected_model = st.selectbox("AI Model", VALID_MODELS, index=0)
+    selected_model = st.selectbox("AI Model", available_models, index=0)
 
 def call_groq(messages, model, key, max_tok=1800, temp=0.2):
     clean_k = sanitize_text(key)
@@ -55,7 +71,7 @@ def call_groq(messages, model, key, max_tok=1800, temp=0.2):
             "https://api.groq.com/openai/v1/chat/completions",
             headers=headers,
             json=payload,
-            timeout=25
+            timeout=30
         )
         if res.status_code == 200:
             return res.json()["choices"][0]["message"]["content"]
@@ -63,13 +79,12 @@ def call_groq(messages, model, key, max_tok=1800, temp=0.2):
             st.error(f"API Error {res.status_code}: {res.text}")
             return None
     except requests.exceptions.Timeout:
-        st.error("Request timed out after 25 seconds. Please try again.")
+        st.error("Request timed out after 30 seconds. Please try again.")
         return None
     except Exception as exc:
         st.error(f"Connection failed: {exc}")
         return None
 
-# Session state initialization
 if "configured_app" not in st.session_state:
     st.session_state.configured_app = None
 if "chat_history" not in st.session_state:
@@ -77,7 +92,7 @@ if "chat_history" not in st.session_state:
 
 user_request = st.text_area(
     "What AI tool do you want to create?",
-    placeholder="e.g. create an AI which can decode C codes and explain them point to point in bullet points"
+    placeholder="e.g. make an AI which can draw graphs based on input equation given by the user"
 )
 
 if st.button("Build AI Tool", type="primary"):
@@ -89,7 +104,7 @@ if st.button("Build AI Tool", type="primary"):
         with st.status("Factory running: Constructing Custom AI...", expanded=True) as status:
             status.write("Architect Brain: Engineering AI persona, instructions, and tool rules...")
             architect_prompt = (
-                f"You are a meta-architect. A user wants to build an AI tool with this purpose:\n'{user_request}'\n\n"
+                f"You are an AI architect. A user wants to build an AI tool with this purpose:\n'{user_request}'\n\n"
                 "Define the complete system instructions for this custom AI. Include:\n"
                 "1. Role and expertise.\n"
                 "2. Specific step-by-step problem-solving method.\n"
@@ -128,7 +143,6 @@ if st.button("Build AI Tool", type="primary"):
                 st.session_state.chat_history = []
                 status.update(label="Custom AI Built and Ready!", state="complete", expanded=False)
 
-# Render the active AI if built
 if st.session_state.configured_app:
     app_info = st.session_state.configured_app
     st.markdown("---")
@@ -139,12 +153,10 @@ if st.session_state.configured_app:
         st.subheader("Your Custom AI is Active")
         st.caption(f"Goal: {app_info['goal']}")
         
-        # Display chat history
         for msg in st.session_state.chat_history:
             with st.chat_message(msg["role"]):
                 st.markdown(msg["content"])
         
-        # Input prompt for the custom AI
         user_input = st.chat_input("Interact with your custom AI here...")
         if user_input:
             st.session_state.chat_history.append({"role": "user", "content": user_input})
