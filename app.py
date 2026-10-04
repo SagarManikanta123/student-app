@@ -1,23 +1,3 @@
-Error running preview: unterminated string literal (detected at line 185) (<string>, line 185)
-```
-
-### What happened:
-Because generating an entire graphing application with equations is a large script, it hit the `max_tok=1800` cutoff right at line 185 in the middle of a string, leaving an unfinished quote at the very end.
-
-Increasing the Builder's token limit to **4000** allows `openai/gpt-oss-20b` to write complete scripts without getting cut off at the bottom.
-
----
-
-### Step 1: Open `app.py` on GitHub
-1. Switch to your **`student-app/app.py at main`** browser tab.
-2. Click the **pencil icon** to edit[cite: 10].
-3. Select everything (`Ctrl + A`) and hit **Delete**.
-
----
-
-### Step 2: Paste this Code (Expanded Output Buffer)
-
-```python
 import streamlit as st
 import requests
 import json
@@ -51,7 +31,7 @@ with st.sidebar:
 
 prompt = st.text_area("What tool do you want to build?", placeholder="e.g. build an AI which draws graphs of equations provided by user")
 
-def call_llm(prompt_text, system_instruction, model, key, max_tok=4000):
+def call_llm(prompt_text, system_instruction, model, key, max_tok=3500):
     clean_k = sanitize_text(key)
     headers = {
         "Authorization": f"Bearer {clean_k}",
@@ -91,16 +71,14 @@ if st.button("Run AI Factory", type="primary"):
     else:
         status = st.status("Factory running: Starting Brain Pipeline...", expanded=True)
         
-        # Brain 1: Compact Blueprint
         status.write(f"Brain 1 (Architect - {arch_model}): Designing UI blueprint...")
-        arch_prompt = f"Design a concise Streamlit app specification for: '{prompt}'. Keep it under 150 words focusing on inputs, matplotlib/plotly plotting logic, and outputs."
+        arch_prompt = f"Design a concise Streamlit app specification for: '{prompt}'. Keep it under 150 words focusing on inputs, layout, and output logic."
         arch_spec = call_llm(arch_prompt, "You are a concise software architect.", arch_model, api_key, max_tok=500)
         
         if arch_spec:
-            # Brain 2: Complete Code Generator
             status.write(f"Brain 2 (Builder - {build_model}): Writing complete Streamlit code...")
-            build_prompt = f"Build a clean, robust, working Streamlit app for this specification:\n{arch_spec}\n\nReturn ONLY the complete python code inside a single ```python ``` block. Make sure to close all quotes and brackets completely. Do not add markdown explanation outside the code block."
-            raw_code = call_llm(build_prompt, "You are an expert Streamlit developer. Always write complete, bug-free python code with closed quotes.", build_model, api_key, max_tok=4000)
+            build_prompt = f"Build a clean, robust, working Streamlit app for this specification:\n{arch_spec}\n\nReturn ONLY the complete python code inside a single ```python ``` block. Make sure to close all quotes, strings, and brackets. Do not add markdown explanation outside the code block."
+            raw_code = call_llm(build_prompt, "You are an expert Streamlit developer. Always write complete, bug-free python code with closed quotes.", build_model, api_key, max_tok=3500)
             
             if raw_code:
                 code_match = re.search(r"```python(.*?)```", raw_code, re.DOTALL)
