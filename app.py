@@ -29,7 +29,7 @@ with st.sidebar:
     arch_model = st.selectbox("Architect Brain", supported_models, index=0)
     build_model = st.selectbox("Builder Brain", supported_models, index=0)
 
-prompt = st.text_area("What tool do you want to build?", placeholder="e.g. build an AI which draws graphs of equations provided by user")
+prompt = st.text_area("What tool do you want to build?", placeholder="e.g. build an AI which draws graphs based on equations given by user in text form")
 
 def call_llm(prompt_text, system_instruction, model, key, max_tok=3500):
     clean_k = sanitize_text(key)
@@ -71,14 +71,22 @@ if st.button("Run AI Factory", type="primary"):
     else:
         status = st.status("Factory running: Starting Brain Pipeline...", expanded=True)
         
+        # Brain 1: Architecture Blueprint
         status.write(f"Brain 1 (Architect - {arch_model}): Designing UI blueprint...")
-        arch_prompt = f"Design a concise Streamlit app specification for: '{prompt}'. Keep it under 150 words focusing on inputs, layout, and output logic."
+        arch_prompt = f"Design a concise Streamlit app specification for: '{prompt}'. Focus on clear inputs, straightforward evaluation using numpy or sympy, and clean plotting using matplotlib."
         arch_spec = call_llm(arch_prompt, "You are a concise software architect.", arch_model, api_key, max_tok=500)
         
         if arch_spec:
-            status.write(f"Brain 2 (Builder - {build_model}): Writing complete Streamlit code...")
-            build_prompt = f"Build a clean, robust, working Streamlit app for this specification:\n{arch_spec}\n\nReturn ONLY the complete python code inside a single ```python ``` block. Make sure to close all quotes, strings, and brackets. Do not add markdown explanation outside the code block."
-            raw_code = call_llm(build_prompt, "You are an expert Streamlit developer. Always write complete, bug-free python code with closed quotes.", build_model, api_key, max_tok=3500)
+            # Brain 2: Streamlit Code Builder
+            status.write(f"Brain 2 (Builder - {build_model}): Writing clean Streamlit code...")
+            build_prompt = (
+                f"Build a complete, standalone, bug-free Streamlit Python app based on this specification:\n{arch_spec}\n\n"
+                "CRITICAL RULES:\n"
+                "1. If plotting is required, use 'matplotlib.pyplot' with 'st.pyplot(fig)' to ensure stability.\n"
+                "2. Ensure all brackets, strings, and parentheses are properly closed.\n"
+                "3. Return ONLY executable python code wrapped in a single ```python ``` block. No conversational text."
+            )
+            raw_code = call_llm(build_prompt, "You are an expert Python and Streamlit developer. Output only valid code.", build_model, api_key, max_tok=3500)
             
             if raw_code:
                 code_match = re.search(r"```python(.*?)```", raw_code, re.DOTALL)
