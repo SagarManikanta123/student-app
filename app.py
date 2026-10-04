@@ -20,7 +20,6 @@ with st.sidebar:
     st.markdown("[Get a free Groq API key here](https://console.groq.com/keys)")
     st.markdown("---")
     
-    # High-capacity reliable models on Groq
     supported_models = [
         "openai/gpt-oss-20b",
         "openai/gpt-oss-120b"
@@ -30,7 +29,7 @@ with st.sidebar:
     arch_model = st.selectbox("Architect Brain", supported_models, index=0)
     build_model = st.selectbox("Builder Brain", supported_models, index=0)
 
-prompt = st.text_area("What tool do you want to build?", placeholder="e.g. make an AI which asks for a 3D figure name and renders it")
+prompt = st.text_area("What tool do you want to build?", placeholder="e.g. A C programming cheat sheet and syntax builder with copyable snippets")
 
 def call_llm(prompt_text, system_instruction, model, key, max_tok=1500):
     clean_k = sanitize_text(key)
