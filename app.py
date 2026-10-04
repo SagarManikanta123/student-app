@@ -20,9 +20,10 @@ with st.sidebar:
     st.markdown("[Get a free Groq API key here](https://console.groq.com/keys)")
     st.markdown("---")
     
-    # Model defaults
-    default_models = ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b"]
+    # Text-only model candidates
+    default_models = ["openai/gpt-oss-20b", "openai/gpt-oss-120b"]
     models = default_models
+    
     if api_key:
         try:
             m_res = requests.get(
@@ -31,16 +32,21 @@ with st.sidebar:
                 timeout=5
             )
             if m_res.status_code == 200:
-                fetched = [m["id"] for m in m_res.json().get("data", []) if "whisper" not in m["id"] and "guard" not in m["id"]]
+                # Filter out voice, audio, or moderation models
+                fetched = [
+                    m["id"] for m in m_res.json().get("data", [])
+                    if not any(bad in m["id"].lower() for bad in ["whisper", "guard", "orpheus", "tts", "audio", "canopy"])
+                ]
                 if fetched:
                     models = fetched
         except Exception:
             pass
 
+    st.markdown("**Pipeline Brains:**")
     arch_model = st.selectbox("Architect Brain", models, index=0)
-    build_model = st.selectbox("Builder Brain", models, index=min(1, len(models) - 1))
+    build_model = st.selectbox("Builder Brain", models, index=0)
 
-prompt = st.text_area("What tool do you want to build?", placeholder="e.g. A C programming cheat sheet and syntax builder with copyable snippets")
+prompt = st.text_area("What tool do you want to build?", placeholder="e.g. I need an AI for C programs and reminders")
 
 def call_llm(prompt_text, system_instruction, model, key):
     clean_k = sanitize_text(key)
