@@ -15,8 +15,8 @@ with st.sidebar:
     st.markdown("[Get a free Groq API key here](https://console.groq.com/keys)")
     st.markdown("---")
     st.markdown("**Pipeline Brains:**")
-    st.markdown("1. 🧠 **Architect:** DeepSeek-R1-Distill")
-    st.markdown("2. ⚡ **Builder:** Qwen 2.5 Coder 32B")
+    st.markdown("1. 🧠 **Architect:** Llama 3.3 70B Versatile")
+    st.markdown("2. ⚡ **Builder:** Llama 3.3 70B Versatile")
 
 prompt = st.text_area("What tool do you want to build?", placeholder="e.g., A C code generator with syntax explanations and copyable snippets.")
 
@@ -28,7 +28,7 @@ def query_groq(prompt_text, system_instruction, model, key):
             {"role": "system", "content": system_instruction},
             {"role": "user", "content": prompt_text}
         ],
-        "temperature": 0.6
+        "temperature": 0.5
     }
     res = requests.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=payload)
     if res.status_code == 200:
@@ -46,18 +46,17 @@ if st.button("🚀 Run AI Factory", type="primary"):
         status = st.status("🏭 Factory running: Starting Brain Pipeline...", expanded=True)
         
         # Brain 1: Architect
-        status.write("🧠 **Brain 1 (Architect - DeepSeek):** Designing system architecture and UI blueprint...")
+        status.write("🧠 **Brain 1 (Architect):** Designing system architecture and UI blueprint...")
         arch_prompt = f"Design a simple, single-page Streamlit educational web app for this goal: '{prompt}'. Provide clean component specifications and logic."
-        arch_spec = query_groq(arch_prompt, "You are a software architect.", "deepseek-r1-distill-llama-70b", api_key)
+        arch_spec = query_groq(arch_prompt, "You are a software architect.", "llama-3.3-70b-versatile", api_key)
         
         if arch_spec:
             # Brain 2: Builder
-            status.write("⚡ **Brain 2 (Builder - Qwen Coder):** Writing clean Streamlit code...")
+            status.write("⚡ **Brain 2 (Builder):** Writing clean Streamlit code...")
             build_prompt = f"Based on this specification:\n{arch_spec}\n\nWrite valid, standalone Streamlit Python code. Return ONLY pure python code inside a single ```python ``` code block. Do not add markdown text outside the code block."
-            raw_code = query_groq(build_prompt, "You are an expert Streamlit and Python developer.", "qwen-2.5-coder-32b", api_key)
+            raw_code = query_groq(build_prompt, "You are an expert Streamlit and Python developer.", "llama-3.3-70b-versatile", api_key)
             
             if raw_code:
-                # Clean markdown blocks
                 code_match = re.search(r"```python(.*?)```", raw_code, re.DOTALL)
                 clean_code = code_match.group(1).strip() if code_match else raw_code.strip()
                 
