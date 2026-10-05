@@ -21,43 +21,21 @@ def extract_clean_code(text):
         return match.group(1).strip()
     return text.strip()
 
-# Check Streamlit Secrets first so users are never asked for a key
+# Check Streamlit Secrets first
 api_key = ""
 if "GROQ_API_KEY" in st.secrets:
     api_key = sanitize_text(st.secrets["GROQ_API_KEY"])
 
-# Fallback sidebar for manual override only if secret is missing
 if not api_key:
     with st.sidebar:
         st.header("Admin Setup")
         raw_key = st.text_input("Groq API Key", type="password")
         api_key = sanitize_text(raw_key)
 
-# Dynamic text model fetching
-available_models = ["llama-3.1-8b-instant"]
-if api_key:
-    try:
-        m_res = requests.get(
-            "https://api.groq.com/openai/v1/models",
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-            },
-            timeout=8
-        )
-        if m_res.status_code == 200:
-            fetched = [
-                m["id"] for m in m_res.json().get("data", [])
-                if not any(bad in m["id"].lower() for bad in ["whisper", "guard", "orpheus", "tts", "audio", "canopy", "safeguard"])
-            ]
-            if fetched:
-                available_models = fetched
-    except Exception:
-        pass
+# Pick standard, high-capacity models on Groq
+selected_model = "llama-3.1-8b-instant"
 
-selected_model = available_models[0]
-
-def call_groq(messages, model, key, max_tok=1000, temp=0.2):
+def call_groq(messages, model, key, max_tok=750, temp=0.2):
     clean_k = sanitize_text(key)
     headers = {
         "Authorization": f"Bearer {clean_k}",
@@ -80,7 +58,7 @@ def call_groq(messages, model, key, max_tok=1000, temp=0.2):
         if res.status_code == 200:
             return res.json()["choices"][0]["message"]["content"]
         else:
-            st.error(f"Brain Pipeline API Error {res.status_code}: {res.text}")
+            st.error(f"API Error {res.status_code}: {res.text}")
             return None
     except requests.exceptions.Timeout:
         st.error("Pipeline timed out. Please retry.")
@@ -96,7 +74,7 @@ if "chat_history" not in st.session_state:
 
 user_request = st.text_area(
     "What AI tool do you want to create?",
-    placeholder="e.g. An AI that solves and plots math equations, explains theory doubts, or converts notes into clean summaries"
+    placeholder="e.g. make an AI that can draw graphs based on user defined functions"
 )
 
 if st.button("Build AI Tool", type="primary"):
@@ -107,31 +85,30 @@ if st.button("Build AI Tool", type="primary"):
     else:
         with st.status("Executing 7-Brain Pipeline...", expanded=True) as status:
             # Brain 1: Intent Deconstructor
-            status.write("🧠 Brain 1/7 (Deconstructor): Extracting primary intent and user deliverables...")
-            p1 = f"Identify the core purpose, user persona, and primary deliverable for: '{user_request}'. Be concise."
-            b1_out = call_groq([{"role": "user", "content": p1}], selected_model, api_key, max_tok=350)
+            status.write("🧠 Brain 1/7 (Deconstructor): Extracting primary intent...")
+            p1 = f"Identify the core purpose, user persona, and primary deliverable for: '{user_request}'. Be very concise."
+            b1_out = call_groq([{"role": "user", "content": p1}], selected_model, api_key, max_tok=250)
             
             # Brain 2: Scope & Edge-Case Specialist
-            status.write("🧠 Brain 2/7 (Scope Analyst): Mapping boundary conditions and edge cases...")
-            p2 = f"Based on this scope:\n{b1_out}\nList 3 potential input failure modes and exact handling guidelines."
-            b2_out = call_groq([{"role": "user", "content": p2}], selected_model, api_key, max_tok=350) if b1_out else None
+            status.write("🧠 Brain 2/7 (Scope Analyst): Mapping boundary conditions...")
+            p2 = f"Based on this scope:\n{b1_out}\nList 2 potential input failure modes and handling guidelines concisely."
+            b2_out = call_groq([{"role": "user", "content": p2}], selected_model, api_key, max_tok=250) if b1_out else None
             
             # Brain 3: System Architect
             status.write("🧠 Brain 3/7 (System Architect): Formulating core AI identity...")
             p3 = f"Given:\nIntent: {b1_out}\nGuardrails: {b2_out}\nWrite the exact expert persona and identity for this custom AI."
-            b3_out = call_groq([{"role": "user", "content": p3}], selected_model, api_key, max_tok=400) if b2_out else None
+            b3_out = call_groq([{"role": "user", "content": p3}], selected_model, api_key, max_tok=300) if b2_out else None
 
             # Brain 4: Reasoning Protocol Planner
-            status.write("🧠 Brain 4/7 (Reasoning Planner): Building step-by-step thinking algorithm...")
-            p4 = f"For identity:\n{b3_out}\nDefine the precise step-by-step execution algorithm the AI must follow when answering."
-            b4_out = call_groq([{"role": "user", "content": p4}], selected_model, api_key, max_tok=450) if b3_out else None
+            status.write("🧠 Brain 4/7 (Reasoning Planner): Building execution algorithm...")
+            p4 = f"For identity:\n{b3_out}\nDefine the step-by-step execution algorithm the AI must follow when answering."
+            b4_out = call_groq([{"role": "user", "content": p4}], selected_model, api_key, max_tok=350) if b3_out else None
 
             # Brain 5: Output Styler & Guardrails
             status.write("🧠 Brain 5/7 (Guardrail Auditor): Enforcing formatting standards...")
-            p5 = f"For execution logic:\n{b4_out}\nDefine strict layout and syntax formatting constraints (tables, markdown, bullet limits)."
-            b5_out = call_groq([{"role": "user", "content": p5}], selected_model, api_key, max_tok=400) if b4_out else None
+            p5 = f"For execution logic:\n{b4_out}\nDefine strict layout and syntax formatting constraints (bullet limits, math notation)."
+            b5_out = call_groq([{"role": "user", "content": p5}], selected_model, api_key, max_tok=300) if b4_out else None
 
-            # Compile Master System Prompt
             master_system_prompt = (
                 f"### ROLE & IDENTITY\n{b3_out}\n\n"
                 f"### OPERATING PROTOCOL\n{b4_out}\n\n"
@@ -140,17 +117,17 @@ if st.button("Build AI Tool", type="primary"):
             ) if b5_out else None
 
             # Brain 6: Code Synthesizer
-            status.write("🧠 Brain 6/7 (Code Synthesizer): Compiling standalone Streamlit source package...")
+            status.write("🧠 Brain 6/7 (Code Synthesizer): Compiling standalone Streamlit package...")
             p6 = (
-                f"Write a clean, standalone Python Streamlit app implementing this assistant logic:\n{master_system_prompt}\n\n"
-                "Return ONLY valid python code wrapped inside a single ```python ``` block."
+                f"Write a standalone Python Streamlit app implementing this assistant logic:\n{master_system_prompt}\n\n"
+                "Return ONLY valid python code wrapped in a single ```python ``` block."
             )
-            b6_out = call_groq([{"role": "user", "content": p6}], selected_model, api_key, max_tok=1800) if master_system_prompt else None
+            b6_out = call_groq([{"role": "user", "content": p6}], selected_model, api_key, max_tok=1000) if master_system_prompt else None
 
             # Brain 7: QA & Reviewer
-            status.write("🧠 Brain 7/7 (Quality Assurance): Auditing pipeline output and issuing health report...")
-            p7 = f"Review this generated directive:\n{master_system_prompt}\nProvide a 2-sentence QA sign-off confirming operational readiness."
-            b7_out = call_groq([{"role": "user", "content": p7}], selected_model, api_key, max_tok=250) if master_system_prompt else None
+            status.write("🧠 Brain 7/7 (Quality Assurance): Issuing readiness sign-off...")
+            p7 = f"Review this generated directive:\n{master_system_prompt}\nProvide a 1-sentence QA sign-off confirming operational readiness."
+            b7_out = call_groq([{"role": "user", "content": p7}], selected_model, api_key, max_tok=150) if master_system_prompt else None
 
             if master_system_prompt:
                 clean_code = extract_clean_code(b6_out) if b6_out else "# Code generation unavailable."
@@ -189,7 +166,8 @@ if st.session_state.configured_app:
                     for m in st.session_state.chat_history:
                         messages.append({"role": m["role"], "content": m["content"]})
                     
-                    reply = call_groq(messages, selected_model, api_key, max_tok=1800, temp=0.3)
+                    # Safe token budget to avoid rate limits
+                    reply = call_groq(messages, selected_model, api_key, max_tok=750, temp=0.3)
                     if reply:
                         st.markdown(reply)
                         st.session_state.chat_history.append({"role": "assistant", "content": reply})
