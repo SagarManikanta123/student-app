@@ -4,8 +4,13 @@ import requests
 import re
 import base64
 import urllib.parse
+import io
+import json
 import numpy as np
 import matplotlib.pyplot as plt
+from fpdf import FPDF
+from pptx import Presentation
+from pptx.util import Inches, Pt
 
 st.set_page_config(page_title="Universal AI Factory (Mega Rayquaza Core)", layout="wide")
 
@@ -33,9 +38,9 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<p class="rayquaza-header">Universal AI Factory: 21-Brain Council</p>', unsafe_allow_html=True)
-st.markdown('<span class="apex-badge">🐉 Inner Core: Mega Rayquaza (Apex Governor & Delta Stream Engine)</span>', unsafe_allow_html=True)
-st.caption("Build custom AIs using Voice Dictation or Text. Features real image generation, Matplotlib plotting, and visual inspection.")
+st.markdown('<p class="rayquaza-header">Universal AI Factory: 23-Brain Council</p>', unsafe_allow_html=True)
+st.markdown('<span class="apex-badge">🐉 Inner Core: Mega Rayquaza (Apex Governor, PDF & PPTX Engines Active)</span>', unsafe_allow_html=True)
+st.caption("Voice Command, Real Image Generation, Matplotlib Graphing, Circuit Inspection, PPTX Slides & PDF Reports.")
 
 def sanitize_text(text):
     if not text:
@@ -69,6 +74,44 @@ def strip_internal_thoughts(text):
         filtered.append(line)
     result = "\n".join(filtered).strip()
     return result if result else clean.strip()
+
+# Document generation helpers
+def build_pdf_bytes(title, content):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Helvetica", "B", 18)
+    pdf.cell(0, 12, text=title[:80], new_x="LMARGIN", new_y="NEXT", align="C")
+    pdf.ln(5)
+    pdf.set_font("Helvetica", size=11)
+    
+    clean_content = "".join(c for c in content if ord(c) < 256)
+    for paragraph in clean_content.split("\n"):
+        if paragraph.strip():
+            pdf.multi_cell(0, 7, text=paragraph.strip())
+            pdf.ln(2)
+    return bytes(pdf.output())
+
+def build_pptx_bytes(presentation_data):
+    prs = Presentation()
+    for slide_info in presentation_data.get("slides", []):
+        slide = prs.slides.add_slide(prs.slide_layouts[1])
+        title = slide.shapes.title
+        body = slide.placeholders[1]
+        
+        title.text = slide_info.get("title", "Untitled Slide")
+        tf = body.text_frame
+        tf.word_wrap = True
+        
+        bullets = slide_info.get("bullets", [])
+        if bullets:
+            tf.text = bullets[0]
+            for bullet in bullets[1:]:
+                p = tf.add_paragraph()
+                p.text = bullet
+                p.level = 0
+    buf = io.BytesIO()
+    prs.save(buf)
+    return buf.getvalue()
 
 # Read Secrets
 api_key = ""
@@ -126,7 +169,7 @@ def call_groq(messages, model=PRIMARY_TEXT_MODEL, key=api_key, max_tok=1400, tem
             
     return last_error
 
-# In-browser microphone component reusable across sections
+# In-browser microphone component
 def render_voice_button(element_id="factoryMic", label="Speak Your AI Design"):
     mic_html = f"""
     <div style="font-family: sans-serif; display: flex; flex-direction: column; gap: 6px;">
@@ -223,13 +266,13 @@ st.subheader("1. AI Factory Creator (Voice or Text)")
 col_creator_text, col_creator_mic = st.columns([2, 1])
 
 with col_creator_mic:
-    st.write("🎙️ **Voice Command to Build AI**")
+    st.write("🎙️️ **Voice Command to Build AI**")
     render_voice_button(element_id="factory_creator_mic", label="Speak What AI to Build")
 
 with col_creator_text:
     user_request = st.text_area(
         "Describe or paste the AI tool you want the factory to create:",
-        placeholder="e.g. Build an AI tutor that can explain circuits, solve math, draw graphs, and generate diagrams.",
+        placeholder="e.g. Build an AI assistant with voice input, PowerPoint creation, PDF documents, math graphs, and circuit explanations.",
         height=100
     )
 
@@ -239,38 +282,41 @@ if st.button("Deploy AI with Mega Rayquaza Inner Core", type="primary"):
     elif not user_request.strip():
         st.warning("Please describe what tool you want to create (speak via microphone or type above).")
     else:
-        with st.status("Awakening Mega Rayquaza & The 21-Brain Council...", expanded=True) as status:
-            status.write("🐉 Channeling the Delta Stream: Harmonizing 21 specialized brains...")
+        with st.status("Awakening Mega Rayquaza & The 23-Brain Council...", expanded=True) as status:
+            status.write("🐉 Channeling the Delta Stream: Harmonizing 23 specialized brains...")
             
             council_synthesis_prompt = (
-                f"You are the Mega Rayquaza Core — the legendary apex intelligence presiding over the 21-Brain Council. "
+                f"You are the Mega Rayquaza Core — the apex intelligence presiding over the 23-Brain Council. "
                 f"A creator commands the deployment of an assistant designed for: '{user_request}'.\n\n"
-                "Command the full 21 departments into perfect alignment:\n"
-                "1. Inner Apex Core: Mega Rayquaza (Supreme Speed, Global Coherence, Unstoppable Problem Solving)\n"
+                "Command the full 23 departments into alignment:\n"
+                "1. Inner Apex Core: Mega Rayquaza\n"
                 "2. Hardware & Electronics Specialist (Circuits, Arduino, Microcontrollers, Pinouts)\n"
-                "3. Vision & Diagram Inspector (OCR, High-Resolution Circuit & Photo Analysis)\n"
-                "4. Pure & Applied Mathematics Brain (Algebra, Calculus, Precise Step-by-Step Proofs)\n"
-                "5. Theoretical & Classical Physics Engine (Kinematics, Electromagnetism, Forces)\n"
-                "6. Chemistry Specialist (Reactions, Balancing, Molecules)\n"
+                "3. Vision & Diagram Inspector (OCR, Visual Hardware Analysis)\n"
+                "4. Pure & Applied Mathematics Brain (Proofs, Calculus, Algebra)\n"
+                "5. Theoretical & Classical Physics Engine (Kinematics, Electromagnetism)\n"
+                "6. Chemistry Specialist (Reactions, Balancing)\n"
                 "7. Computer Science & Algorithm Engine\n"
                 "8. Software Engineering Brain\n"
                 "9. Microcontroller Firmware Specialist\n"
-                "10. Life Sciences & Bioengineering Brain\n"
+                "10. Life Sciences & Biology Brain\n"
                 "11. Statistical Modeling Brain\n"
                 "12. Dynamic Visualizer & Graph Plotter\n"
                 "13. Image Generation Prompt Specialist\n"
                 "14. Voice & Audio Interaction Specialist\n"
-                "15. Creative Analogy Architect\n"
-                "16. Pedagogical Manners Brain\n"
-                "17. History & Civics Brain\n"
-                "18. Linguistics Specialist\n"
-                "19. Edge Case & Failure Analyst\n"
-                "20. Code Verification Brain\n"
-                "21. Universal Multi-Disciplinary Synthesizer\n\n"
+                "15. Document & PDF Report Compiler (Brain 22)\n"
+                "16. Executive Slide Deck & PPTX Architect (Brain 23)\n"
+                "17. Creative Analogy Architect\n"
+                "18. Pedagogical Manners Brain\n"
+                "19. History & Civics Brain\n"
+                "20. Linguistics Specialist\n"
+                "21. Edge Case & Failure Analyst\n"
+                "22. Code Verification Brain\n"
+                "23. Universal Multi-Disciplinary Synthesizer\n\n"
                 "OPERATIONAL OUTPUT RULES:\n"
-                "- Speak with decisive clarity, supreme competence, and encouraging polite tone.\n"
-                "- If the user asks to GENERATE AN IMAGE, DRAW A PICTURE, or CREATE ART: Describe what is created, then on the very last line output: `IMAGE_PROMPT: <vivid visual description in English>`\n"
-                "- If the user asks to DRAW A MATHEMATICAL GRAPH: Explain the math, then provide executable plotting code with matplotlib.pyplot as plt and numpy as np defining fig inside a python code block.\n"
+                "- If the user requests a PRESENTATION, SLIDES, or PPT: Output a clean JSON block inside ```json ``` with structure: {\"slides\": [{\"title\": \"...\", \"bullets\": [\"...\", \"...\"]}]}.\n"
+                "- If the user requests a PDF, REPORT, or NOTES: Provide the full structured document text and conclude with `GENERATE_PDF: <Document Title>`.\n"
+                "- If the user requests an IMAGE: Describe it, then on the last line output: `IMAGE_PROMPT: <visual prompt>`.\n"
+                "- If DRAWING A GRAPH: Supply executable code using `matplotlib.pyplot as plt` and `numpy as np` defining `fig` inside a python code block.\n"
                 "- Never dump raw code unless the user explicitly requested code."
             )
             
@@ -314,7 +360,6 @@ if st.session_state.configured_app:
         st.subheader("2. Your Active Custom AI")
         st.caption(f"Council Objective: {app_info['goal']} | Inner Core: Mega Rayquaza Activated")
 
-        # Media & Voice Controls inside the Created Tool
         st.markdown("#### 🎙️ Media & Voice Interaction")
         col_up, col_chat_mic = st.columns([2, 1])
 
@@ -349,7 +394,7 @@ if st.session_state.configured_app:
                     st.session_state.persisted_image_mime = None
                     st.rerun()
 
-        # Render conversation history with images, graphs & text
+        # Render conversation history
         for msg in st.session_state.chat_history:
             with st.chat_message(msg["role"]):
                 if msg.get("text_content"):
@@ -368,23 +413,41 @@ if st.session_state.configured_app:
                     except Exception:
                         pass
 
+                if msg.get("pdf_data"):
+                    st.download_button(
+                        f"📄 Download Document: {msg['pdf_title']}.pdf",
+                        data=msg["pdf_data"],
+                        file_name=f"{msg['pdf_title'].replace(' ', '_')}.pdf",
+                        mime="application/pdf"
+                    )
+
+                if msg.get("pptx_data"):
+                    st.download_button(
+                        "📊 Download Slide Deck (.pptx)",
+                        data=msg["pptx_data"],
+                        file_name="presentation.pptx",
+                        mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                    )
+
         # Chat Input Bar
-        user_input = st.chat_input("Speak via mic above (it auto-copies), paste, or type your question here...")
+        user_input = st.chat_input("Speak via mic above, paste, or type your request (e.g. 'Make a PPT on Robotics', 'Generate PDF notes on Ohm's law')...")
         if user_input:
             st.session_state.chat_history.append({"role": "user", "text_content": user_input})
             with st.chat_message("user"):
                 st.markdown(user_input)
 
             with st.chat_message("assistant"):
-                with st.spinner("Mega Rayquaza Inner Core harmonizing council response..."):
+                with st.spinner("Mega Rayquaza Inner Core synthesizing response..."):
                     council_system = (
                         f"You are the deployed expert AI system created for: {app_info['goal']}.\n"
                         f"{app_info['system_prompt']}\n\n"
                         "OPERATIONAL DIRECTIVES:\n"
-                        "1. Answer with supreme confidence, crystal clarity, and polite pedagogical authority.\n"
-                        "2. IF THE USER ASKS TO GENERATE AN IMAGE, PICTURE, OR ART: Describe the concept, then on the last line output: `IMAGE_PROMPT: <vivid visual description in English>`\n"
-                        "3. IF DRAWING A GRAPH OR PLOTTING AN EQUATION: Explain the math, then provide executable plotting code with matplotlib.pyplot as plt and numpy as np defining fig inside a python code block.\n"
-                        "4. Never output internal thoughts or planning notes."
+                        "1. Answer with clarity, authority, and polite pedagogical instruction.\n"
+                        "2. IF THE USER ASKS FOR A PRESENTATION/SLIDES/PPT: Provide a summary in text, then output a JSON block inside ```json ``` with structure: {\"slides\": [{\"title\": \"...\", \"bullets\": [\"...\", \"...\"]}]}.\n"
+                        "3. IF THE USER ASKS FOR A PDF/REPORT/NOTES: Write the document thoroughly, and finish on the last line with: `GENERATE_PDF: <Title>`.\n"
+                        "4. IF THE USER ASKS FOR AN IMAGE: On the last line output: `IMAGE_PROMPT: <vivid visual description in English>`.\n"
+                        "5. IF DRAWING A GRAPH: Supply executable plotting code using matplotlib.pyplot as plt and numpy as np defining fig inside a python code block.\n"
+                        "6. Never output internal thoughts or planning notes."
                     )
 
                     img_b64 = st.session_state.get("persisted_image_b64")
@@ -404,13 +467,13 @@ if st.session_state.configured_app:
                             {"role": "system", "content": council_system},
                             {"role": "user", "content": user_content}
                         ]
-                        reply = call_groq(messages, model=PRIMARY_VISION_MODEL, max_tok=1200, temp=0.4)
+                        reply = call_groq(messages, model=PRIMARY_VISION_MODEL, max_tok=1400, temp=0.4)
                     else:
                         messages = [{"role": "system", "content": council_system}]
                         for m in st.session_state.chat_history:
                             if m.get("text_content"):
                                 messages.append({"role": m["role"], "content": m["text_content"]})
-                        reply = call_groq(messages, model=PRIMARY_TEXT_MODEL, max_tok=1400, temp=0.4)
+                        reply = call_groq(messages, model=PRIMARY_TEXT_MODEL, max_tok=1500, temp=0.4)
 
                     if reply:
                         image_url = None
@@ -421,10 +484,30 @@ if st.session_state.configured_app:
                             encoded_prompt = urllib.parse.quote(clean_prompt[:250])
                             image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=768&height=512&nologo=true"
 
+                        pdf_data = None
+                        pdf_title = "Document"
+                        pdf_match = re.search(r"GENERATE_PDF:\s*(.+)", reply, re.IGNORECASE)
+                        if pdf_match:
+                            pdf_title = pdf_match.group(1).strip()
+                            body_for_pdf = re.sub(r"GENERATE_PDF:\s*.+", "", reply, flags=re.IGNORECASE).strip()
+                            pdf_data = build_pdf_bytes(pdf_title, body_for_pdf)
+
+                        pptx_data = None
+                        json_match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", reply, re.DOTALL)
+                        if json_match:
+                            try:
+                                parsed_json = json.loads(json_match.group(1))
+                                if "slides" in parsed_json:
+                                    pptx_data = build_pptx_bytes(parsed_json)
+                            except Exception:
+                                pass
+
                         plot_match = re.search(r"```(?:python)?\s*(.*?fig\s*=.*?)\s*```", reply, re.DOTALL)
                         plot_code = plot_match.group(1) if plot_match else None
 
                         cleaned_text = re.sub(r"IMAGE_PROMPT:\s*.+", "", reply, flags=re.IGNORECASE)
+                        cleaned_text = re.sub(r"GENERATE_PDF:\s*.+", "", cleaned_text, flags=re.IGNORECASE)
+                        cleaned_text = re.sub(r"```(?:json)?\s*\{.*?\}\s*```", "", cleaned_text, flags=re.DOTALL)
                         cleaned_text = re.sub(r"```(?:python)?\s*.*?fig\s*=.*?\s*```", "", cleaned_text, flags=re.DOTALL).strip()
 
                         if cleaned_text:
@@ -443,16 +526,35 @@ if st.session_state.configured_app:
                             except Exception as err:
                                 st.caption(f"(Graph rendering error: {err})")
 
+                        if pdf_data:
+                            st.download_button(
+                                f"📄 Download Document: {pdf_title}.pdf",
+                                data=pdf_data,
+                                file_name=f"{pdf_title.replace(' ', '_')}.pdf",
+                                mime="application/pdf"
+                            )
+
+                        if pptx_data:
+                            st.download_button(
+                                "📊 Download Slide Deck (.pptx)",
+                                data=pptx_data,
+                                file_name="presentation.pptx",
+                                mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                            )
+
                         st.session_state.chat_history.append({
                             "role": "assistant",
                             "text_content": cleaned_text,
                             "image_url": image_url,
-                            "plot_code": plot_code
+                            "plot_code": plot_code,
+                            "pdf_data": pdf_data,
+                            "pdf_title": pdf_title,
+                            "pptx_data": pptx_data
                         })
 
     with tab2:
         st.subheader("Generated Python Code")
-        st.caption("Complete code compiled across all 21 specialist brains:")
+        st.caption("Complete code compiled across all 23 specialist brains:")
         st.code(app_info["source_code"], language="python")
         st.download_button(
             "Download Source Code (.py)",
