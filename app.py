@@ -3,10 +3,10 @@ import requests
 import json
 import re
 
-st.set_page_config(page_title="AI App Factory", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="AI App Factory - 7-Brain Pipeline", layout="wide", initial_sidebar_state="collapsed")
 
-st.title("AI App Factory")
-st.caption("Robust Multi-Brain Core: Architect → Code Synthesizer → QA Verifier")
+st.title("AI App Factory (7-Brain Core)")
+st.caption("Deconstructor → Scope → Architect → Reasoning → Guardrail → Synthesizer → QA")
 
 def sanitize_text(text):
     if not text:
@@ -32,7 +32,7 @@ if not api_key:
         raw_key = st.text_input("Groq API Key", type="password")
         api_key = sanitize_text(raw_key)
 
-# Auto-detect the best active text model
+# Auto-detect active text models
 def get_live_model(key):
     try:
         res = requests.get(
@@ -46,9 +46,9 @@ def get_live_model(key):
                 m["id"] for m in data
                 if not any(bad in m["id"].lower() for bad in ["whisper", "guard", "orpheus", "tts", "audio", "vision"])
             ]
-            for preferred in ["openai/gpt-oss-20b", "openai/gpt-oss-120b", "qwen/qwen3.8-27b"]:
-                if preferred in valid:
-                    return preferred
+            for pref in ["openai/gpt-oss-20b", "openai/gpt-oss-120b", "qwen/qwen3-32b"]:
+                if pref in valid:
+                    return pref
             if valid:
                 return valid[0]
     except Exception:
@@ -57,12 +57,12 @@ def get_live_model(key):
 
 active_model = get_live_model(api_key) if api_key else "openai/gpt-oss-20b"
 
-def call_groq(messages, model, key, max_tok=600, temp=0.2):
+def call_groq(messages, model, key, max_tok=450, temp=0.2):
     clean_k = sanitize_text(key)
     headers = {
         "Authorization": f"Bearer {clean_k}",
         "Content-Type": "application/json",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+        "User-Agent": "Mozilla/5.0"
     }
     payload = {
         "model": model,
@@ -78,16 +78,18 @@ def call_groq(messages, model, key, max_tok=600, temp=0.2):
             timeout=30
         )
         if res.status_code == 200:
-            content = res.json()["choices"][0]["message"]["content"]
-            return content.strip() if content else None
+            msg = res.json()["choices"][0]["message"]
+            # Extract content or fallback to reasoning field
+            content = msg.get("content") or msg.get("reasoning") or ""
+            return content.strip()
         else:
             st.error(f"API Error {res.status_code}: {res.text}")
             return None
     except requests.exceptions.Timeout:
-        st.error("Pipeline timed out. Please retry.")
+        st.error("Pipeline request timed out.")
         return None
     except Exception as exc:
-        st.error(f"Connection failed: {exc}")
+        st.error(f"Connection error: {exc}")
         return None
 
 if "configured_app" not in st.session_state:
@@ -106,46 +108,66 @@ if st.button("Build AI Tool", type="primary"):
     elif not user_request.strip():
         st.warning("Please type a description of the tool you want to create.")
     else:
-        with st.status(f"Running Engine ({active_model})...", expanded=True) as status:
-            # Brain 1: Master Architect & Reasoning Protocol
-            status.write("🧠 Brain 1/3 (Architect): Engineering persona, operating logic, and edge-case guardrails...")
-            p1 = (
-                f"You are a master AI architect. A user wants to build an AI assistant with this goal:\n'{user_request}'\n\n"
-                "Define the comprehensive system instructions for this custom AI. Cover:\n"
-                "1. Exact expert persona & role.\n"
-                "2. Step-by-step problem-solving and reasoning rules.\n"
-                "3. Edge cases and how to avoid errors.\n"
-                "4. Strict output formatting rules.\n"
-                "Be direct, detailed, and clear."
-            )
-            master_system_prompt = call_groq([{"role": "user", "content": p1}], active_model, api_key, max_tok=600)
+        with st.status(f"Executing 7-Brain Pipeline (Engine: {active_model})...", expanded=True) as status:
+            # Brain 1: Intent Deconstructor
+            status.write("🧠 Brain 1/7 (Deconstructor): Extracting primary intent...")
+            p1 = f"Identify the core purpose, target user, and deliverable for: '{user_request}'. Be brief."
+            b1_out = call_groq([{"role": "user", "content": p1}], active_model, api_key, max_tok=200)
             
-            # Brain 2: Code Synthesizer
-            status.write("🧠 Brain 2/3 (Code Synthesizer): Compiling standalone Python package...")
-            p2 = (
-                f"Write a standalone Python Streamlit app that runs an assistant with these instructions:\n{master_system_prompt}\n\n"
-                "Output ONLY valid python code wrapped in a single ```python ``` block."
-            )
-            raw_code = call_groq([{"role": "user", "content": p2}], active_model, api_key, max_tok=700)
+            # Brain 2: Scope & Edge-Case Specialist
+            status.write("🧠 Brain 2/7 (Scope Analyst): Mapping boundary conditions...")
+            p2 = f"For this purpose:\n{b1_out or user_request}\nList 2 failure modes and exact handling guidelines."
+            b2_out = call_groq([{"role": "user", "content": p2}], active_model, api_key, max_tok=200)
             
-            # Brain 3: QA & Verification
-            status.write("🧠 Brain 3/3 (QA Verifier): Auditing operational readiness...")
-            p3 = f"Provide a brief 1-sentence verification confirming that this assistant is ready to use:\n{master_system_prompt}"
-            qa_note = call_groq([{"role": "user", "content": p3}], active_model, api_key, max_tok=100)
+            # Brain 3: System Architect
+            status.write("🧠 Brain 3/7 (System Architect): Formulating core AI persona...")
+            p3 = f"Given:\nIntent: {b1_out}\nGuardrails: {b2_out}\nWrite the exact expert persona and identity for this custom AI."
+            b3_out = call_groq([{"role": "user", "content": p3}], active_model, api_key, max_tok=250)
 
-            # Deploy to state
-            clean_code = extract_clean_code(raw_code) if raw_code else "# Code generation skipped."
-            effective_prompt = master_system_prompt or f"You are an assistant designed for: {user_request}"
-            
+            # Brain 4: Reasoning Protocol Planner
+            status.write("🧠 Brain 4/7 (Reasoning Planner): Building execution algorithm...")
+            p4 = f"For persona:\n{b3_out}\nDefine the step-by-step reasoning steps the AI must take to answer."
+            b4_out = call_groq([{"role": "user", "content": p4}], active_model, api_key, max_tok=250)
+
+            # Brain 5: Output Styler & Guardrails
+            status.write("🧠 Brain 5/7 (Guardrail Auditor): Enforcing formatting standards...")
+            p5 = f"For protocol:\n{b4_out}\nDefine layout and syntax formatting constraints (bullet format, clean math syntax)."
+            b5_out = call_groq([{"role": "user", "content": p5}], active_model, api_key, max_tok=200)
+
+            master_system_prompt = (
+                f"### ROLE & IDENTITY\n{b3_out or user_request}\n\n"
+                f"### OPERATING PROTOCOL\n{b4_out or 'Provide direct, clear steps.'}\n\n"
+                f"### FORMATTING & CONSTRAINTS\n{b5_out or 'Use clean markdown.'}\n\n"
+                f"### EDGE CASE HANDLING\n{b2_out or 'Handle edge cases cleanly.'}"
+            )
+
+            # Brain 6: Code Synthesizer
+            status.write("🧠 Brain 6/7 (Code Synthesizer): Compiling standalone Streamlit package...")
+            p6 = (
+                f"Write a standalone Python Streamlit app implementing this assistant:\n{master_system_prompt}\n\n"
+                "Return ONLY valid python code wrapped in a single ```python ``` block."
+            )
+            b6_out = call_groq([{"role": "user", "content": p6}], active_model, api_key, max_tok=600)
+
+            # Brain 7: QA & Reviewer
+            status.write("🧠 Brain 7/7 (Quality Assurance): Issuing readiness report...")
+            p7 = f"Review this directive:\n{master_system_prompt}\nProvide a 1-sentence confirmation of operational readiness."
+            b7_out = call_groq([{"role": "user", "content": p7}], active_model, api_key, max_tok=100)
+
+            clean_code = extract_clean_code(b6_out) if b6_out else "# Code generation unavailable."
             st.session_state.configured_app = {
                 "goal": user_request,
-                "system_prompt": effective_prompt,
+                "system_prompt": master_system_prompt,
                 "source_code": clean_code,
-                "qa_report": qa_note or "Operational verified."
+                "qa_report": b7_out or "Operational verified."
             }
             st.session_state.chat_history = []
-            status.update(label="Custom AI Built and Ready!", state="complete", expanded=False)
+            status.update(label="All 7 Brains Finished Successfully!", state="complete", expanded=False)
+            
+            # Re-run so the page immediately draws the active workspace
+            st.rerun()
 
+# Render Custom AI Workspace
 if st.session_state.configured_app:
     app_info = st.session_state.configured_app
     st.markdown("---")
@@ -154,7 +176,7 @@ if st.session_state.configured_app:
     
     with tab1:
         st.subheader("Your Custom AI is Active")
-        st.caption(f"Status: {app_info['qa_report']}")
+        st.caption(f"QA Sign-off: {app_info['qa_report']}")
         
         for msg in st.session_state.chat_history:
             with st.chat_message(msg["role"]):
@@ -179,7 +201,7 @@ if st.session_state.configured_app:
 
     with tab2:
         st.subheader("Generated Python Code")
-        st.caption("You can copy or download this standalone Streamlit app to run locally or host elsewhere.")
+        st.caption("Standalone code you can download and run independently:")
         st.code(app_info["source_code"], language="python")
         st.download_button(
             "Download Source Code (.py)",
