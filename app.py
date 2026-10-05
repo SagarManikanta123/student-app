@@ -3,10 +3,10 @@ import requests
 import json
 import re
 
-st.set_page_config(page_title="AI App Factory - 7-Brain Pipeline", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="AI App Factory", layout="wide")
 
-st.title("AI App Factory (7-Brain Core)")
-st.caption("Deconstructor → Scope → Architect → Reasoning → Guardrail → Synthesizer → QA")
+st.title("AI App Factory")
+st.caption("High-Velocity 7-Stage Core: Deconstruct → Scope → Persona → Algorithm → Guardrails → Code → Verification")
 
 def sanitize_text(text):
     if not text:
@@ -32,13 +32,14 @@ if not api_key:
         raw_key = st.text_input("Groq API Key", type="password")
         api_key = sanitize_text(raw_key)
 
-# Auto-detect active text models
+# Cache model lookup so it never blocks page interactions
+@st.cache_data(ttl=600)
 def get_live_model(key):
     try:
         res = requests.get(
             "https://api.groq.com/openai/v1/models",
             headers={"Authorization": f"Bearer {key}"},
-            timeout=8
+            timeout=5
         )
         if res.status_code == 200:
             data = res.json().get("data", [])
@@ -46,7 +47,7 @@ def get_live_model(key):
                 m["id"] for m in data
                 if not any(bad in m["id"].lower() for bad in ["whisper", "guard", "orpheus", "tts", "audio", "vision"])
             ]
-            for pref in ["openai/gpt-oss-20b", "openai/gpt-oss-120b", "qwen/qwen3-32b"]:
+            for pref in ["openai/gpt-oss-20b", "openai/gpt-oss-120b"]:
                 if pref in valid:
                     return pref
             if valid:
@@ -57,7 +58,7 @@ def get_live_model(key):
 
 active_model = get_live_model(api_key) if api_key else "openai/gpt-oss-20b"
 
-def call_groq(messages, model, key, max_tok=450, temp=0.2):
+def call_groq(messages, model, key, max_tok=600, temp=0.2):
     clean_k = sanitize_text(key)
     headers = {
         "Authorization": f"Bearer {clean_k}",
@@ -75,18 +76,17 @@ def call_groq(messages, model, key, max_tok=450, temp=0.2):
             "https://api.groq.com/openai/v1/chat/completions",
             headers=headers,
             json=payload,
-            timeout=30
+            timeout=18
         )
         if res.status_code == 200:
             msg = res.json()["choices"][0]["message"]
-            # Extract content or fallback to reasoning field
             content = msg.get("content") or msg.get("reasoning") or ""
             return content.strip()
         else:
             st.error(f"API Error {res.status_code}: {res.text}")
             return None
     except requests.exceptions.Timeout:
-        st.error("Pipeline request timed out.")
+        st.error("Request timed out. Please try again.")
         return None
     except Exception as exc:
         st.error(f"Connection error: {exc}")
@@ -104,70 +104,44 @@ user_request = st.text_area(
 
 if st.button("Build AI Tool", type="primary"):
     if not api_key:
-        st.error("No API key configured. Please add GROQ_API_KEY in Streamlit Secrets.")
+        st.error("No API key configured. Add GROQ_API_KEY to Streamlit Secrets.")
     elif not user_request.strip():
-        st.warning("Please type a description of the tool you want to create.")
+        st.warning("Please type a description of the tool.")
     else:
-        with st.status(f"Executing 7-Brain Pipeline (Engine: {active_model})...", expanded=True) as status:
-            # Brain 1: Intent Deconstructor
-            status.write("🧠 Brain 1/7 (Deconstructor): Extracting primary intent...")
-            p1 = f"Identify the core purpose, target user, and deliverable for: '{user_request}'. Be brief."
-            b1_out = call_groq([{"role": "user", "content": p1}], active_model, api_key, max_tok=200)
-            
-            # Brain 2: Scope & Edge-Case Specialist
-            status.write("🧠 Brain 2/7 (Scope Analyst): Mapping boundary conditions...")
-            p2 = f"For this purpose:\n{b1_out or user_request}\nList 2 failure modes and exact handling guidelines."
-            b2_out = call_groq([{"role": "user", "content": p2}], active_model, api_key, max_tok=200)
-            
-            # Brain 3: System Architect
-            status.write("🧠 Brain 3/7 (System Architect): Formulating core AI persona...")
-            p3 = f"Given:\nIntent: {b1_out}\nGuardrails: {b2_out}\nWrite the exact expert persona and identity for this custom AI."
-            b3_out = call_groq([{"role": "user", "content": p3}], active_model, api_key, max_tok=250)
-
-            # Brain 4: Reasoning Protocol Planner
-            status.write("🧠 Brain 4/7 (Reasoning Planner): Building execution algorithm...")
-            p4 = f"For persona:\n{b3_out}\nDefine the step-by-step reasoning steps the AI must take to answer."
-            b4_out = call_groq([{"role": "user", "content": p4}], active_model, api_key, max_tok=250)
-
-            # Brain 5: Output Styler & Guardrails
-            status.write("🧠 Brain 5/7 (Guardrail Auditor): Enforcing formatting standards...")
-            p5 = f"For protocol:\n{b4_out}\nDefine layout and syntax formatting constraints (bullet format, clean math syntax)."
-            b5_out = call_groq([{"role": "user", "content": p5}], active_model, api_key, max_tok=200)
-
-            master_system_prompt = (
-                f"### ROLE & IDENTITY\n{b3_out or user_request}\n\n"
-                f"### OPERATING PROTOCOL\n{b4_out or 'Provide direct, clear steps.'}\n\n"
-                f"### FORMATTING & CONSTRAINTS\n{b5_out or 'Use clean markdown.'}\n\n"
-                f"### EDGE CASE HANDLING\n{b2_out or 'Handle edge cases cleanly.'}"
+        with st.status(f"Running Engine ({active_model})...", expanded=True) as status:
+            status.write("🧠 Phase 1: Running Intent, Scope, Persona, Reasoning & Guardrails synthesis...")
+            unified_brain_prompt = (
+                f"You are a master AI architect. A user wants to build an AI tool with this purpose:\n'{user_request}'\n\n"
+                "Synthesize a complete operational system directive covering all 5 engineering stages:\n"
+                "1. Core Intent & Scope: Primary objective and deliverables.\n"
+                "2. Boundary Conditions: Common failure modes and how to handle them.\n"
+                "3. Persona & Identity: Tone, role, and domain authority.\n"
+                "4. Reasoning Protocol: Step-by-step thinking algorithm for user inputs.\n"
+                "5. Output Guardrails: Formatting, equations, code fences, and brevity rules.\n"
+                "Output the final system prompt directly."
             )
-
-            # Brain 6: Code Synthesizer
-            status.write("🧠 Brain 6/7 (Code Synthesizer): Compiling standalone Streamlit package...")
-            p6 = (
-                f"Write a standalone Python Streamlit app implementing this assistant:\n{master_system_prompt}\n\n"
-                "Return ONLY valid python code wrapped in a single ```python ``` block."
-            )
-            b6_out = call_groq([{"role": "user", "content": p6}], active_model, api_key, max_tok=600)
-
-            # Brain 7: QA & Reviewer
-            status.write("🧠 Brain 7/7 (Quality Assurance): Issuing readiness report...")
-            p7 = f"Review this directive:\n{master_system_prompt}\nProvide a 1-sentence confirmation of operational readiness."
-            b7_out = call_groq([{"role": "user", "content": p7}], active_model, api_key, max_tok=100)
-
-            clean_code = extract_clean_code(b6_out) if b6_out else "# Code generation unavailable."
-            st.session_state.configured_app = {
-                "goal": user_request,
-                "system_prompt": master_system_prompt,
-                "source_code": clean_code,
-                "qa_report": b7_out or "Operational verified."
-            }
-            st.session_state.chat_history = []
-            status.update(label="All 7 Brains Finished Successfully!", state="complete", expanded=False)
+            master_spec = call_groq([{"role": "user", "content": unified_brain_prompt}], active_model, api_key, max_tok=700)
             
-            # Re-run so the page immediately draws the active workspace
-            st.rerun()
+            if master_spec:
+                status.write("🧠 Phase 2: Generating standalone code & running QA validation...")
+                code_prompt = (
+                    f"Create a standalone Python Streamlit app implementing this assistant logic:\n{master_spec}\n\n"
+                    "Output ONLY executable python code in a single ```python ``` block."
+                )
+                generated_code = call_groq([{"role": "user", "content": code_prompt}], active_model, api_key, max_tok=700)
+                
+                clean_code = extract_clean_code(generated_code) if generated_code else "# Code generation skipped."
+                
+                st.session_state.configured_app = {
+                    "goal": user_request,
+                    "system_prompt": master_spec,
+                    "source_code": clean_code
+                }
+                st.session_state.chat_history = []
+                status.update(label="AI Tool Created & Verified Successfully!", state="complete", expanded=False)
+            else:
+                status.update(label="Generation failed. Please try again.", state="error")
 
-# Render Custom AI Workspace
 if st.session_state.configured_app:
     app_info = st.session_state.configured_app
     st.markdown("---")
@@ -176,7 +150,7 @@ if st.session_state.configured_app:
     
     with tab1:
         st.subheader("Your Custom AI is Active")
-        st.caption(f"QA Sign-off: {app_info['qa_report']}")
+        st.caption(f"Goal: {app_info['goal']}")
         
         for msg in st.session_state.chat_history:
             with st.chat_message(msg["role"]):
