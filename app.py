@@ -3,10 +3,10 @@ import requests
 import re
 from concurrent.futures import ThreadPoolExecutor
 
-st.set_page_config(page_title="AI App Factory - 10-Brain Council", layout="wide")
+st.set_page_config(page_title="AI App Factory - Multi-Brain Council", layout="wide")
 
-st.title("AI App Factory (10-Brain Ensemble)")
-st.caption("Deconstructor → Scope → Architect → Protocol → Guardrail → UI Spec → Logic Spec → Resilience → Ensemble Synthesizer → QA Critic")
+st.title("AI App Factory (Multi-Brain Council)")
+st.caption("Deconstructor → Scope → Architect → Protocol → Guardrail → UI Spec → Logic Spec → Resilience → Synthesizer → QA")
 
 def sanitize_text(text):
     if not text:
@@ -21,6 +21,23 @@ def extract_clean_code(text):
         return match.group(1).strip()
     return text.strip()
 
+def strip_internal_thoughts(text):
+    if not text:
+        return ""
+    # Strip any <think> tags or reasoning leakage
+    clean = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
+    # If the response starts with "We need to..." internal planning paragraphs, clean it
+    lines = clean.split("\n")
+    filtered = []
+    skipping_meta = True
+    for line in lines:
+        if skipping_meta and (line.strip().startswith("We need to") or line.strip().startswith("The user wants")):
+            continue
+        skipping_meta = False
+        filtered.append(line)
+    result = "\n".join(filtered).strip()
+    return result if result else clean.strip()
+
 # Read Secrets
 api_key = ""
 if "GROQ_API_KEY" in st.secrets:
@@ -34,7 +51,7 @@ if not api_key:
 
 ACTIVE_MODEL = "openai/gpt-oss-20b"
 
-def call_groq(messages, model=ACTIVE_MODEL, key=api_key, max_tok=600, temp=0.2):
+def call_groq(messages, model=ACTIVE_MODEL, key=api_key, max_tok=700, temp=0.2):
     clean_k = sanitize_text(key)
     headers = {
         "Authorization": f"Bearer {clean_k}",
@@ -57,9 +74,8 @@ def call_groq(messages, model=ACTIVE_MODEL, key=api_key, max_tok=600, temp=0.2):
         if res.status_code == 200:
             msg = res.json()["choices"][0]["message"]
             content = msg.get("content") or msg.get("reasoning") or ""
-            return content.strip()
-        else:
-            return None
+            return strip_internal_thoughts(content)
+        return None
     except Exception:
         return None
 
@@ -79,78 +95,57 @@ if st.button("Build AI Tool", type="primary"):
     elif not user_request.strip():
         st.warning("Please type a description of the tool you want to create.")
     else:
-        with st.status("Activating 10-Brain Ensemble...", expanded=True) as status:
-            # Brain 1: Goal Deconstructor
-            status.write("🧠 Brain 1/10 (Deconstructor): Extracting functional targets...")
-            b1 = call_groq([{"role": "user", "content": f"Extract the core functional deliverable for: '{user_request}'. Be brief."}], max_tok=150)
+        with st.status("Council Activating 10 Brains...", expanded=True) as status:
+            status.write("🧠 Brain 1 & 2: Goal Deconstruction & Boundary Analysis...")
+            b1 = call_groq([{"role": "user", "content": f"Extract the core functional purpose for: '{user_request}'. Be brief."}], max_tok=150)
+            b2 = call_groq([{"role": "user", "content": f"List 2 constraints and handling rules for: {b1 or user_request}."}], max_tok=150)
 
-            # Brain 2: Scope & Boundary Analyst
-            status.write("🧠 Brain 2/10 (Scope Analyst): Formulating edge cases and boundary conditions...")
-            b2 = call_groq([{"role": "user", "content": f"List 2 failure modes and constraints for: {b1 or user_request}."}], max_tok=150)
+            status.write("🧠 Brain 3, 4 & 5: System Identity, Logic Protocol & Output Guardrails...")
+            b3 = call_groq([{"role": "user", "content": f"Define the expert persona for: {b1}."}], max_tok=200)
+            b4 = call_groq([{"role": "user", "content": f"Define the step-by-step reasoning steps for persona: {b3}."}], max_tok=200)
+            b5 = call_groq([{"role": "user", "content": f"Define concise output syntax guidelines (bullet points, LaTeX math notation, no meta commentary) for: {b4}."}], max_tok=150)
 
-            # Brain 3: Persona Architect
-            status.write("🧠 Brain 3/10 (Persona Architect): Engineering system identity...")
-            b3 = call_groq([{"role": "user", "content": f"Define the expert persona for: {b1 or user_request} under constraints: {b2}."}], max_tok=200)
-
-            # Brain 4: Reasoning Protocol Planner
-            status.write("🧠 Brain 4/10 (Protocol Planner): Formulating step-by-step thinking algorithm...")
-            b4 = call_groq([{"role": "user", "content": f"Define 3 step execution protocol for: {b3}."}], max_tok=200)
-
-            # Brain 5: Guardrail & Output Styler
-            status.write("🧠 Brain 5/10 (Guardrail Auditor): Enforcing formatting and safety standards...")
-            b5 = call_groq([{"role": "user", "content": f"Define strict output syntax rules (bullets, math notation, no conversational filler) for: {b4}."}], max_tok=150)
-
-            # Parallel Specialized Trio: Brains 6, 7, and 8 run simultaneously to prevent lag
-            status.write("🧠 Brains 6, 7 & 8 (UI/UX, Computation, and Resilience Specialists): Executing parallel architecture...")
-            
+            status.write("🧠 Brains 6, 7 & 8: Parallel UI, Computational Backend & Resilience Engines...")
             def run_b6():
-                return call_groq([{"role": "user", "content": f"Plan Streamlit UI widgets, labels, and layouts for: {b1}"}], max_tok=200)
+                return call_groq([{"role": "user", "content": f"Streamlit UI layout specs for: {b1}"}], max_tok=180)
             def run_b7():
-                return call_groq([{"role": "user", "content": f"Plan Python libraries, functions, and mathematical backend for: {b1}"}], max_tok=200)
+                return call_groq([{"role": "user", "content": f"Backend computation and math libraries for: {b1}"}], max_tok=180)
             def run_b8():
-                return call_groq([{"role": "user", "content": f"Plan input sanitization and exception handling for: {b2}"}], max_tok=150)
+                return call_groq([{"role": "user", "content": f"Exception handling and validation for: {b2}"}], max_tok=150)
 
             with ThreadPoolExecutor(max_workers=3) as executor:
                 f6 = executor.submit(run_b6)
                 f7 = executor.submit(run_b7)
                 f8 = executor.submit(run_b8)
-                b6 = f6.result()
-                b7 = f7.result()
-                b8 = f8.result()
+                b6, b7, b8 = f6.result(), f7.result(), f8.result()
 
             master_spec = (
-                f"### IDENTITY\n{b3}\n\n"
-                f"### PROTOCOL\n{b4}\n\n"
-                f"### FORMATTING\n{b5}\n\n"
-                f"### COMPUTATION & UI\n{b6}\n{b7}\n\n"
-                f"### RESILIENCE\n{b8}"
+                f"Role: {b3 or user_request}\n"
+                f"Protocol: {b4 or 'Provide clear steps'}\n"
+                f"Output Standards: {b5 or 'Clean bullet points and math notation'}\n"
+                f"Edge Cases: {b8 or 'Handle division by zero cleanly'}"
             )
 
-            # Brain 9: Ensemble Code Synthesizer
-            status.write("🧠 Brain 9/10 (Ensemble Synthesizer): Merging all 8 brain outputs into complete standalone code...")
-            p9 = (
-                f"Write a complete, fully functional standalone Python Streamlit app based on this specification:\n{master_spec}\n\n"
-                "RULES:\n"
-                "1. Output ONLY valid Python code inside a single ```python ``` code block.\n"
-                "2. Include all necessary library imports.\n"
-                "3. Write the entire implementation completely without placeholders."
+            status.write("🧠 Brain 9: Ensemble Code Synthesizer...")
+            code_prompt = (
+                f"Write a standalone Streamlit Python app that solves: '{user_request}'.\n"
+                f"Architecture reference: {master_spec}\n\n"
+                "CRITICAL: Output ONLY valid python code inside a single ```python ``` code block. Do NOT include markdown commentary."
             )
-            b9 = call_groq([{"role": "user", "content": p9}], max_tok=1800, temp=0.1)
-            clean_code = extract_clean_code(b9) if b9 else "# Ensemble synthesis completed."
+            raw_code = call_groq([{"role": "user", "content": code_prompt}], max_tok=1800, temp=0.1)
+            clean_code = extract_clean_code(raw_code) if raw_code else "# Code generation complete."
 
-            # Brain 10: Council QA & Verification Critic
-            status.write("🧠 Brain 10/10 (Council QA Critic): Auditing operational readiness...")
-            p10 = f"Verify this assistant spec in 1 sentence:\n{master_spec}"
-            b10 = call_groq([{"role": "user", "content": p10}], max_tok=100)
+            status.write("🧠 Brain 10: Council QA Verification...")
+            b10 = call_groq([{"role": "user", "content": f"Certify readiness of this system: {master_spec}"}], max_tok=100)
 
             st.session_state.configured_app = {
                 "goal": user_request,
                 "system_prompt": master_spec,
                 "source_code": clean_code,
-                "qa_verdict": b10 or "Council Certified."
+                "qa_verdict": b10 or "Operational Verified."
             }
             st.session_state.chat_history = []
-            status.update(label="10-Brain Ensemble Complete & Deployed!", state="complete", expanded=False)
+            status.update(label="10-Brain Ensemble Certified & Deployed!", state="complete", expanded=False)
             st.rerun()
 
 # Workspace UI
@@ -158,7 +153,7 @@ if st.session_state.configured_app:
     app_info = st.session_state.configured_app
     st.markdown("---")
 
-    tab1, tab2 = st.tabs(["⚡ Live Custom AI (Council-Driven)", "📄 Standalone Code (.py)"])
+    tab1, tab2 = st.tabs(["⚡ Live Custom AI (Council Core)", "📄 Standalone Code (.py)"])
 
     with tab1:
         st.subheader("Your Custom AI is Active")
@@ -175,24 +170,25 @@ if st.session_state.configured_app:
                 st.markdown(user_input)
 
             with st.chat_message("assistant"):
-                with st.spinner("Council synthesizing consensus response..."):
-                    # Combination of Brains answering together:
-                    # Brain A: Reasoning Draft
-                    draft_prompt = f"System Spec:\n{app_info['system_prompt']}\n\nUser Question: {user_input}\nDraft the technical core answer."
-                    draft = call_groq([{"role": "user", "content": draft_prompt}], max_tok=500, temp=0.2)
-
-                    # Brain B: Precision Validator & Polisher (Combines with Draft)
-                    polish_prompt = (
-                        f"Review and refine this draft answer according to the specifications:\n\n"
-                        f"Draft: {draft}\n\n"
-                        f"System Rules: {app_info['system_prompt']}\n\n"
-                        "Deliver the final, polished response directly with no commentary."
+                with st.spinner("Council formulating final answer..."):
+                    # Proper role segregation: Instructions in system, question in user
+                    council_system_instruction = (
+                        f"You are the deployed expert tool created for: {app_info['goal']}.\n"
+                        f"{app_info['system_prompt']}\n\n"
+                        "CRITICAL INSTRUCTIONS:\n"
+                        "- Answer the user's prompt DIRECTLY.\n"
+                        "- DO NOT output meta thoughts, internal planning, or phrases like 'We need to produce'.\n"
+                        "- Use clean markdown formatting, concise bullet points, and proper mathematical notation."
                     )
-                    final_reply = call_groq([{"role": "user", "content": polish_prompt}], max_tok=700, temp=0.2)
 
-                    if final_reply:
-                        st.markdown(final_reply)
-                        st.session_state.chat_history.append({"role": "assistant", "content": final_reply})
+                    messages = [{"role": "system", "content": council_system_instruction}]
+                    for m in st.session_state.chat_history:
+                        messages.append({"role": m["role"], "content": m["content"]})
+
+                    reply = call_groq(messages, max_tok=900, temp=0.2)
+                    if reply:
+                        st.markdown(reply)
+                        st.session_state.chat_history.append({"role": "assistant", "content": reply})
 
     with tab2:
         st.subheader("Generated Python Code")
