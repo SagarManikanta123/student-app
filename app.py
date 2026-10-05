@@ -116,7 +116,6 @@ if st.button("Build Domain-Specialist AI", type="primary"):
         with st.status("Council Activating 12 Domain Specialist Brains...", expanded=True) as status:
             req_lower = user_request.lower()
 
-            # Dynamic Specialist Selection
             active_specialists = []
             if any(w in req_lower for w in ["photo", "image", "picture", "scan", "document", "pdf", "video", "see"]):
                 active_specialists.append("Vision & Media Specialist (Brain 1)")
@@ -139,12 +138,10 @@ if st.button("Build Domain-Specialist AI", type="primary"):
             if any(w in req_lower for w in ["graph", "plot", "draw", "chart", "visualize"]):
                 active_specialists.append("Dynamic Visualization Engine (Brain 10)")
             
-            # Universal Tutor always activates to handle general learning
             active_specialists.append("Universal Cross-Disciplinary Study Tutor (Brain 11)")
 
             status.write(f"Active Council Specialists: {', '.join(active_specialists)}")
 
-            # Parallel Brain Consultations
             def run_specialist_consult(name):
                 prompt = (
                     f"You are the {name}. A user wants to build an AI for:\n'{user_request}'\n\n"
@@ -161,7 +158,6 @@ if st.button("Build Domain-Specialist AI", type="primary"):
                     if directive:
                         specialist_directives[name] = directive
 
-            # Brain 12: Council Synthesizer
             status.write("🧠 Brain 12: Council Synthesizer assembling full operational spec and code...")
             combined_domain_rules = "\n\n".join([f"### {k}\n{v}" for k, v in specialist_directives.items()])
 
@@ -200,7 +196,6 @@ if st.session_state.configured_app:
         st.subheader("Domain-Specialist AI Active")
         st.caption(f"Specialists: {', '.join(app_info['active_specialists'])}")
 
-        # Image & Media Input
         st.markdown("#### 📷 Image & Media Input")
         uploaded_file = st.file_uploader(
             "Upload an image or diagram (Wait until the progress bar reaches 100%):",
@@ -214,7 +209,7 @@ if st.session_state.configured_app:
                 st.session_state.persisted_image_b64 = base64.b64encode(bytes_data).decode("utf-8")
                 st.session_state.persisted_image_mime = uploaded_file.type
 
-        if st.session_state.persisted_image_b64:
+        if st.session_state.get("persisted_image_b64"):
             st.success("✅ Image loaded into Vision Brain memory.")
             col_img, col_btn = st.columns([3, 1])
             with col_img:
@@ -229,7 +224,6 @@ if st.session_state.configured_app:
                     st.session_state.persisted_image_mime = None
                     st.rerun()
 
-        # Render Chat History
         for msg in st.session_state.chat_history:
             with st.chat_message(msg["role"]):
                 st.markdown(msg["content"])
@@ -255,19 +249,22 @@ if st.session_state.configured_app:
                         f"You are the deployed expert multi-domain AI tool created for: {app_info['goal']}.\n"
                         f"{app_info['system_prompt']}\n\n"
                         "OPERATING DIRECTIVES:\n"
-                        "1. Answer clearly, simply, and step-by-step for any subject (Math, Physics, Chemistry, Biology, Code, History, Literature).\n"
-                        "2. Never output meta-thoughts or 'We need to' planning paragraphs.\n"
+                        "1. Answer clearly, simply, and step-by-step for any subject.\n"
+                        "2. Never output meta-thoughts or planning paragraphs.\n"
                         "3. When an image is attached, inspect all elements, text, and numbers thoroughly.\n"
                         "4. If generating visual graphs, provide executable Python code using `matplotlib.pyplot as plt` and define `fig`.\n"
                     )
 
-                    if st.session_state.persisted_image_b64:
+                    img_b64 = st.session_state.get("persisted_image_b64")
+                    img_mime = st.session_state.get("persisted_image_mime", "image/png")
+
+                    if img_b64:
                         user_content = [
                             {"type": "text", "text": user_input},
                             {
                                 "type": "image_url",
                                 "image_url": {
-                                    "url": f"data:{st.session_state.persisted_mime};base64,{st.session_state.persisted_image_b64}"
+                                    "url": f"data:{img_mime};base64,{img_b64}"
                                 }
                             }
                         ]
