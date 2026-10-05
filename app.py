@@ -1,8 +1,7 @@
 import streamlit as st
 import requests
 import re
-import matplotlib.pyplot as plt
-import numpy as np
+import base64
 from concurrent.futures import ThreadPoolExecutor
 
 st.set_page_config(page_title="AI App Factory - Multi-Brain Council", layout="wide")
@@ -23,27 +22,7 @@ def extract_clean_code(text):
         return match.group(1).strip()
     return text.strip()
 
-def strip_internal_thoughts(text):
-    if not text:
-        return ""
-    clean = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
-    lines = clean.split("\n")
-    filtered = []
-    skipping_meta = True
-    for line in lines:
-        stripped = line.strip().lower()
-        if skipping_meta and (
-            stripped.startswith("we need to") or 
-            stripped.startswith("the user wants") or 
-            stripped.startswith("the user is asking")
-        ):
-            continue
-        skipping_meta = False
-        filtered.append(line)
-    result = "\n".join(filtered).strip()
-    return result if result else clean.strip()
-
-# Read Secrets
+# Fetch Secret API Key
 api_key = ""
 if "GROQ_API_KEY" in st.secrets:
     api_key = sanitize_text(st.secrets["GROQ_API_KEY"])
@@ -54,9 +33,10 @@ if not api_key:
         raw_key = st.text_input("Groq API Key", type="password")
         api_key = sanitize_text(raw_key)
 
-ACTIVE_MODEL = "openai/gpt-oss-20b"
+TEXT_MODEL = "openai/gpt-oss-20b"
+VISION_MODEL = "llama-3.2-11b-vision-preview"
 
-def call_groq(messages, model=ACTIVE_MODEL, key=api_key, max_tok=700, temp=0.2):
+def call_groq(messages, model=TEXT_MODEL, key=api_key, max_tok=800, temp=0.2):
     clean_k = sanitize_text(key)
     headers = {
         "Authorization": f"Bearer {clean_k}",
@@ -74,12 +54,14 @@ def call_groq(messages, model=ACTIVE_MODEL, key=api_key, max_tok=700, temp=0.2):
             "https://api.groq.com/openai/v1/chat/completions",
             headers=headers,
             json=payload,
-            timeout=30
+            timeout=35
         )
         if res.status_code == 200:
             msg = res.json()["choices"][0]["message"]
             content = msg.get("content") or msg.get("reasoning") or ""
-            return strip_internal_thoughts(content)
+            # Strip reasoning tags
+            clean = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL).strip()
+            return clean
         return None
     except Exception:
         return None
@@ -91,7 +73,7 @@ if "chat_history" not in st.session_state:
 
 user_request = st.text_area(
     "What AI tool do you want to create?",
-    placeholder="e.g. make an AI that can draw graphs based on user input equations"
+    placeholder="e.g. make an AI that can explain mathematics and sums in a simple way and can understand photos sent to it"
 )
 
 if st.button("Build AI Tool", type="primary"):
@@ -101,22 +83,25 @@ if st.button("Build AI Tool", type="primary"):
         st.warning("Please type a description of the tool you want to create.")
     else:
         with st.status("Council Activating 10 Brains...", expanded=True) as status:
-            status.write("🧠 Brain 1 & 2: Goal Deconstruction & Boundary Analysis...")
+            status.write("🧠 Brain 1 & 2: Goal Deconstruction & Capability Assessment...")
             b1 = call_groq([{"role": "user", "content": f"Extract the core functional purpose for: '{user_request}'. Be brief."}], max_tok=150)
-            b2 = call_groq([{"role": "user", "content": f"List 2 constraints and handling rules for: {b1 or user_request}."}], max_tok=150)
+            b2 = call_groq([{"role": "user", "content": f"List 2 failure modes and handling rules for: {b1 or user_request}."}], max_tok=150)
+
+            # Detect if user requested file or image capabilities
+            needs_vision = any(w in user_request.lower() for w in ["photo", "image", "picture", "document", "pdf", "file", "upload", "scan"])
 
             status.write("🧠 Brain 3, 4 & 5: System Identity, Logic Protocol & Output Guardrails...")
             b3 = call_groq([{"role": "user", "content": f"Define the expert persona for: {b1}."}], max_tok=200)
             b4 = call_groq([{"role": "user", "content": f"Define the step-by-step reasoning steps for persona: {b3}."}], max_tok=200)
-            b5 = call_groq([{"role": "user", "content": f"Define concise output syntax guidelines (bullet points, LaTeX math notation, no meta commentary) for: {b4}."}], max_tok=150)
+            b5 = call_groq([{"role": "user", "content": f"Define concise output syntax guidelines (bullet points, clear math explanations, zero meta thoughts) for: {b4}."}], max_tok=150)
 
-            status.write("🧠 Brains 6, 7 & 8: Parallel UI, Computational Backend & Resilience Engines...")
+            status.write("🧠 Brains 6, 7 & 8: UI Specs, Computational Backend & Resilience...")
             def run_b6():
                 return call_groq([{"role": "user", "content": f"Streamlit UI layout specs for: {b1}"}], max_tok=180)
             def run_b7():
-                return call_groq([{"role": "user", "content": f"Backend computation and math libraries for: {b1}"}], max_tok=180)
+                return call_groq([{"role": "user", "content": f"Backend computation and libraries for: {b1}"}], max_tok=180)
             def run_b8():
-                return call_groq([{"role": "user", "content": f"Exception handling and validation for: {b2}"}], max_tok=150)
+                return call_groq([{"role": "user", "content": f"Validation rules for: {b2}"}], max_tok=150)
 
             with ThreadPoolExecutor(max_workers=3) as executor:
                 f6 = executor.submit(run_b6)
@@ -127,30 +112,28 @@ if st.button("Build AI Tool", type="primary"):
             master_spec = (
                 f"Role: {b3 or user_request}\n"
                 f"Protocol: {b4 or 'Provide clear steps'}\n"
-                f"Output Standards: {b5 or 'Clean bullet points and math notation'}\n"
-                f"Edge Cases: {b8 or 'Handle mathematical domain errors cleanly'}"
+                f"Output Standards: {b5 or 'Clean bullet points and simple math language'}\n"
+                f"Edge Cases: {b8 or 'Handle unreadable images or syntax errors politely'}"
             )
 
             status.write("🧠 Brain 9: Ensemble Code Synthesizer...")
             code_prompt = (
-                f"Write a standalone Streamlit Python app that solves: '{user_request}'.\n"
-                f"Architecture reference: {master_spec}\n\n"
-                "CRITICAL: Output ONLY valid python code inside a single ```python ``` code block. Do NOT include markdown commentary."
+                f"Write a complete, standalone Python Streamlit app that implements: '{user_request}'.\n"
+                f"Include file uploaders, math explanations, and UI components.\n"
+                "Return ONLY executable Python code inside a single ```python ``` code block."
             )
             raw_code = call_groq([{"role": "user", "content": code_prompt}], max_tok=1800, temp=0.1)
             clean_code = extract_clean_code(raw_code) if raw_code else "# Code generation complete."
 
-            status.write("🧠 Brain 10: Council QA Verification...")
-            # Enforce clean verdict with no chain-of-thought planning
-            qa_instruction = "Return ONLY one short sentence certifying this system ready. Example: 'Verified: Operational and ready for input.'"
-            b10_raw = call_groq([{"role": "system", "content": qa_instruction}, {"role": "user", "content": f"Spec: {b1}"}], max_tok=60)
-            b10 = strip_internal_thoughts(b10_raw) if b10_raw else "Council Certified: Ready for deployment."
+            status.write("🧠 Brain 10: Council QA Certification...")
+            qa_verdict = "Council Certified: Ready for deployment."
 
             st.session_state.configured_app = {
                 "goal": user_request,
                 "system_prompt": master_spec,
                 "source_code": clean_code,
-                "qa_verdict": b10
+                "qa_verdict": qa_verdict,
+                "needs_vision": needs_vision
             }
             st.session_state.chat_history = []
             status.update(label="10-Brain Ensemble Certified & Deployed!", state="complete", expanded=False)
@@ -167,61 +150,63 @@ if st.session_state.configured_app:
         st.subheader("Your Custom AI is Active")
         st.caption(f"Council QA: {app_info['qa_verdict']}")
 
+        uploaded_file = None
+        if app_info.get("needs_vision"):
+            st.markdown("##### 📁 Document & Photo Input Section")
+            uploaded_file = st.file_uploader(
+                "Upload a photo or document with math equations/problems:",
+                type=["png", "jpg", "jpeg", "txt"]
+            )
+            if uploaded_file and uploaded_file.type.startswith("image"):
+                st.image(uploaded_file, caption="Uploaded Image Preview", width=350)
+
         for msg in st.session_state.chat_history:
             with st.chat_message(msg["role"]):
                 st.markdown(msg["content"])
-                if "plot_code" in msg:
-                    try:
-                        exec_env = {"np": np, "plt": plt}
-                        exec(msg["plot_code"], exec_env)
-                        fig = exec_env.get("fig") or plt.gcf()
-                        st.pyplot(fig)
-                        plt.clf()
-                    except Exception:
-                        pass
 
-        user_input = st.chat_input("Enter equation or prompt here...")
+        user_input = st.chat_input("Ask a question, request a step-by-step sum explanation, or describe your upload...")
         if user_input:
             st.session_state.chat_history.append({"role": "user", "content": user_input})
             with st.chat_message("user"):
                 st.markdown(user_input)
 
             with st.chat_message("assistant"):
-                with st.spinner("Council analyzing and plotting..."):
-                    council_system_instruction = (
-                        f"You are the deployed expert tool created for: {app_info['goal']}.\n"
+                with st.spinner("Council analyzing and explaining..."):
+                    council_system = (
+                        f"You are the deployed expert AI tool created for: {app_info['goal']}.\n"
                         f"{app_info['system_prompt']}\n\n"
-                        "CRITICAL OPERATIONAL RULES:\n"
-                        "1. Answer the user prompt directly. Never output internal planning notes or 'We need to...'.\n"
-                        "2. Provide an analytical breakdown using bullet points and LaTeX formatting.\n"
-                        "3. If the user input represents a mathematical equation or function to graph, you MUST include a clean Python block using `matplotlib.pyplot as plt` and `numpy as np` defining a figure named `fig`. Do not call `plt.show()`.\n"
+                        "MANDATORY INSTRUCTIONS:\n"
+                        "1. Explain mathematics and sums clearly, simply, and step-by-step.\n"
+                        "2. Answer directly without meta-thoughts, planning outlines, or 'We need to' phrases.\n"
+                        "3. Use clean markdown formatting and numbered steps."
                     )
 
-                    messages = [{"role": "system", "content": council_system_instruction}]
-                    for m in st.session_state.chat_history:
-                        messages.append({"role": m["role"], "content": m["content"]})
+                    # Build message payload
+                    if uploaded_file and uploaded_file.type.startswith("image"):
+                        # Vision flow
+                        bytes_data = uploaded_file.getvalue()
+                        b64_img = base64.b64encode(bytes_data).decode("utf-8")
+                        mime_type = uploaded_file.type
+                        
+                        user_content = [
+                            {"type": "text", "text": user_input or "Please explain the math shown in this uploaded image step-by-step in simple terms."},
+                            {"type": "image_url", "image_url": {"url": f"data:{mime_type};base64,{b64_img}"}}
+                        ]
+                        messages = [
+                            {"role": "system", "content": council_system},
+                            {"role": "user", "content": user_content}
+                        ]
+                        reply = call_groq(messages, model=VISION_MODEL, max_tok=1000, temp=0.2)
+                    else:
+                        # Standard text flow
+                        messages = [{"role": "system", "content": council_system}]
+                        for m in st.session_state.chat_history:
+                            messages.append({"role": m["role"], "content": m["content"]})
+                        reply = call_groq(messages, model=TEXT_MODEL, max_tok=1000, temp=0.2)
 
-                    reply = call_groq(messages, max_tok=1000, temp=0.2)
                     if reply:
                         st.markdown(reply)
-                        
-                        # Extract and render plot code directly if present
-                        code_match = re.search(r"```python\s*(.*?fig\s*=.*?)\s*```", reply, re.DOTALL)
-                        entry = {"role": "assistant", "content": reply}
-                        
-                        if code_match:
-                            extracted_plot = code_match.group(1)
-                            try:
-                                exec_env = {"np": np, "plt": plt}
-                                exec(extracted_plot, exec_env)
-                                fig = exec_env.get("fig") or plt.gcf()
-                                st.pyplot(fig)
-                                plt.clf()
-                                entry["plot_code"] = extracted_plot
-                            except Exception:
-                                pass
-                        
-                        st.session_state.chat_history.append(entry)
+                        st.session_state.chat_history.append({"role": "assistant", "content": reply})
 
     with tab2:
         st.subheader("Generated Python Code")
