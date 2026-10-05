@@ -6,3 +6,5 @@ fpdf2
 python-pptx
 pypdf
 qrcode[pil]
+pandas
+sympy
