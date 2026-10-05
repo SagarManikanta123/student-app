@@ -39,8 +39,8 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown('<p class="rayquaza-header">Universal AI Factory: 23-Brain Council</p>', unsafe_allow_html=True)
-st.markdown('<span class="apex-badge">🐉 Inner Core: Mega Rayquaza (Apex Governor, PDF & PPTX Engines Active)</span>', unsafe_allow_html=True)
-st.caption("Voice Command, Real Image Generation, Matplotlib Graphing, Circuit Inspection, PPTX Slides & PDF Reports.")
+st.markdown('<span class="apex-badge">🐉 Inner Core: Mega Rayquaza (Apex Governor with Live AI Trait Editor)</span>', unsafe_allow_html=True)
+st.caption("Voice Command, Real Image Generation, Matplotlib Graphing, Circuit Inspection, PPTX Slides, PDF Reports & Live Characteristic Customizer.")
 
 def sanitize_text(text):
     if not text:
@@ -75,7 +75,6 @@ def strip_internal_thoughts(text):
     result = "\n".join(filtered).strip()
     return result if result else clean.strip()
 
-# Document generation helpers
 def build_pdf_bytes(title, content):
     pdf = FPDF()
     pdf.add_page()
@@ -169,7 +168,6 @@ def call_groq(messages, model=PRIMARY_TEXT_MODEL, key=api_key, max_tok=1400, tem
             
     return last_error
 
-# In-browser microphone component
 def render_voice_button(element_id="factoryMic", label="Speak Your AI Design"):
     mic_html = f"""
     <div style="font-family: sans-serif; display: flex; flex-direction: column; gap: 6px;">
@@ -261,12 +259,20 @@ if "persisted_image_b64" not in st.session_state:
 if "persisted_image_mime" not in st.session_state:
     st.session_state.persisted_image_mime = None
 
+# Custom Editable AI Traits State
+if "ai_creativity" not in st.session_state:
+    st.session_state.ai_creativity = 0.5
+if "ai_max_tokens" not in st.session_state:
+    st.session_state.ai_max_tokens = 1400
+if "ai_custom_trait" not in st.session_state:
+    st.session_state.ai_custom_trait = "Articulate, polite, highly intuitive with analogies, and mathematically rigorous."
+
 # AI FACTORY CREATOR SECTION WITH VOICE COMMAND
 st.subheader("1. AI Factory Creator (Voice or Text)")
 col_creator_text, col_creator_mic = st.columns([2, 1])
 
 with col_creator_mic:
-    st.write("🎙️️ **Voice Command to Build AI**")
+    st.write("🎙️ **Voice Command to Build AI**")
     render_voice_button(element_id="factory_creator_mic", label="Speak What AI to Build")
 
 with col_creator_text:
@@ -354,8 +360,48 @@ if st.session_state.configured_app:
     app_info = st.session_state.configured_app
     st.markdown("---")
 
-    tab1, tab2 = st.tabs(["⚡ Live Custom AI Workspace", "📄 Standalone Code (.py)"])
+    tab1, tab2, tab3 = st.tabs(["⚡ Live Custom AI Workspace", "🛠️ Edit AI Characteristics", "📄 Standalone Code (.py)"])
 
+    # TAB 2: LIVE CHARACTERISTICS & BEHAVIOR EDITOR
+    with tab2:
+        st.subheader("Customize & Tune AI Characteristics")
+        st.caption("Change how your created AI behaves, responds, and creates without having to rebuild it from scratch.")
+
+        col_c1, col_c2 = st.columns(2)
+        with col_c1:
+            st.session_state.ai_creativity = st.slider(
+                "Creativity & Imagination Level (Temperature)",
+                min_value=0.0,
+                max_value=1.0,
+                value=float(st.session_state.ai_creativity),
+                step=0.05,
+                help="Higher values make responses more creative, exploratory, and analogy-rich. Lower values make them strictly factual."
+            )
+        with col_c2:
+            st.session_state.ai_max_tokens = st.slider(
+                "Maximum Response Length (Tokens)",
+                min_value=400,
+                max_value=2500,
+                value=int(st.session_state.ai_max_tokens),
+                step=100,
+                help="Controls how comprehensive or concise the AI's answers, slides, and documents will be."
+            )
+
+        st.session_state.ai_custom_trait = st.text_area(
+            "Persona, Tone & Specific Characteristic Instructions:",
+            value=st.session_state.ai_custom_trait,
+            help="Type custom traits here. For example: 'Always use humorous physics analogies', 'Explain concepts like I am 12 years old', or 'Act as a Senior Embedded Systems Engineer'."
+        )
+
+        app_info["system_prompt"] = st.text_area(
+            "Council Operational Directives (Direct Prompt Edit):",
+            value=app_info["system_prompt"],
+            height=180,
+            help="You can manually edit the exact instructions the 23-Brain Council follows."
+        )
+        st.success("✅ Characteristics auto-saved! Your next prompt in the chat will use these updated behaviors.")
+
+    # TAB 1: WORKSPACE
     with tab1:
         st.subheader("2. Your Active Custom AI")
         st.caption(f"Council Objective: {app_info['goal']} | Inner Core: Mega Rayquaza Activated")
@@ -394,8 +440,8 @@ if st.session_state.configured_app:
                     st.session_state.persisted_image_mime = None
                     st.rerun()
 
-        # Render conversation history
-        for msg in st.session_state.chat_history:
+        # Render conversation history with unique keys to prevent duplicate element crashes
+        for idx, msg in enumerate(st.session_state.chat_history):
             with st.chat_message(msg["role"]):
                 if msg.get("text_content"):
                     st.markdown(msg["text_content"])
@@ -418,7 +464,8 @@ if st.session_state.configured_app:
                         f"📄 Download Document: {msg['pdf_title']}.pdf",
                         data=msg["pdf_data"],
                         file_name=f"{msg['pdf_title'].replace(' ', '_')}.pdf",
-                        mime="application/pdf"
+                        mime="application/pdf",
+                        key=f"dl_pdf_btn_{idx}"
                     )
 
                 if msg.get("pptx_data"):
@@ -426,11 +473,12 @@ if st.session_state.configured_app:
                         "📊 Download Slide Deck (.pptx)",
                         data=msg["pptx_data"],
                         file_name="presentation.pptx",
-                        mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                        mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                        key=f"dl_pptx_btn_{idx}"
                     )
 
         # Chat Input Bar
-        user_input = st.chat_input("Speak via mic above, paste, or type your request (e.g. 'Make a PPT on Robotics', 'Generate PDF notes on Ohm's law')...")
+        user_input = st.chat_input("Speak via mic above, paste, or type your request (e.g. 'Make a PPT on Robotics', 'Generate PDF notes on Ohm\\'s law')...")
         if user_input:
             st.session_state.chat_history.append({"role": "user", "text_content": user_input})
             with st.chat_message("user"):
@@ -441,6 +489,7 @@ if st.session_state.configured_app:
                     council_system = (
                         f"You are the deployed expert AI system created for: {app_info['goal']}.\n"
                         f"{app_info['system_prompt']}\n\n"
+                        f"USER-CONFIGURED PERSONALITY & TRAITS:\n{st.session_state.ai_custom_trait}\n\n"
                         "OPERATIONAL DIRECTIVES:\n"
                         "1. Answer with clarity, authority, and polite pedagogical instruction.\n"
                         "2. IF THE USER ASKS FOR A PRESENTATION/SLIDES/PPT: Provide a summary in text, then output a JSON block inside ```json ``` with structure: {\"slides\": [{\"title\": \"...\", \"bullets\": [\"...\", \"...\"]}]}.\n"
@@ -452,6 +501,9 @@ if st.session_state.configured_app:
 
                     img_b64 = st.session_state.get("persisted_image_b64")
                     img_mime = st.session_state.get("persisted_image_mime", "image/png")
+
+                    current_temp = float(st.session_state.ai_creativity)
+                    current_tokens = int(st.session_state.ai_max_tokens)
 
                     if img_b64:
                         user_content = [
@@ -467,13 +519,13 @@ if st.session_state.configured_app:
                             {"role": "system", "content": council_system},
                             {"role": "user", "content": user_content}
                         ]
-                        reply = call_groq(messages, model=PRIMARY_VISION_MODEL, max_tok=1400, temp=0.4)
+                        reply = call_groq(messages, model=PRIMARY_VISION_MODEL, max_tok=current_tokens, temp=current_temp)
                     else:
                         messages = [{"role": "system", "content": council_system}]
                         for m in st.session_state.chat_history:
                             if m.get("text_content"):
                                 messages.append({"role": m["role"], "content": m["text_content"]})
-                        reply = call_groq(messages, model=PRIMARY_TEXT_MODEL, max_tok=1500, temp=0.4)
+                        reply = call_groq(messages, model=PRIMARY_TEXT_MODEL, max_tok=current_tokens, temp=current_temp)
 
                     if reply:
                         image_url = None
@@ -526,12 +578,14 @@ if st.session_state.configured_app:
                             except Exception as err:
                                 st.caption(f"(Graph rendering error: {err})")
 
+                        new_idx = len(st.session_state.chat_history)
                         if pdf_data:
                             st.download_button(
                                 f"📄 Download Document: {pdf_title}.pdf",
                                 data=pdf_data,
                                 file_name=f"{pdf_title.replace(' ', '_')}.pdf",
-                                mime="application/pdf"
+                                mime="application/pdf",
+                                key=f"dl_pdf_live_{new_idx}"
                             )
 
                         if pptx_data:
@@ -539,7 +593,8 @@ if st.session_state.configured_app:
                                 "📊 Download Slide Deck (.pptx)",
                                 data=pptx_data,
                                 file_name="presentation.pptx",
-                                mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                                mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                                key=f"dl_pptx_live_{new_idx}"
                             )
 
                         st.session_state.chat_history.append({
@@ -552,7 +607,8 @@ if st.session_state.configured_app:
                             "pptx_data": pptx_data
                         })
 
-    with tab2:
+    # TAB 3: STANDALONE EXPORT CODE
+    with tab3:
         st.subheader("Generated Python Code")
         st.caption("Complete code compiled across all 23 specialist brains:")
         st.code(app_info["source_code"], language="python")
