@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 st.set_page_config(page_title="20-Brain Mega-Council Factory", layout="wide")
 
 st.title("Universal AI Factory (20-Specialist Council)")
-st.caption("Now with Active Graph Rendering & Vector Diagram Generation")
+st.caption("Active Graph Rendering and Vector Diagram Generation")
 
 def sanitize_text(text):
     if not text:
@@ -121,7 +121,7 @@ if st.button("Deploy 20-Brain Mega-Council", type="primary"):
         st.warning("Please describe what tool you want to create.")
     else:
         with st.status("Concurring 20-Brain Mega-Council...", expanded=True) as status:
-            status.write("🧠 Synthesizing 20-department operational directive...")
+            status.write("Synthesizing 20-department operational directive...")
             
             council_synthesis_prompt = (
                 f"You are the Supreme Council Moderator. Build the operational prompt for: '{user_request}'.\n\n"
@@ -146,10 +146,10 @@ if st.button("Deploy 20-Brain Mega-Council", type="primary"):
                 "18. Visual Renderer Engine (SVG & Matplotlib)\n"
                 "19. Universal Cross-Disciplinary Tutor\n"
                 "20. Council Moderator\n\n"
-                "CRITICAL OUTPUT RULES:\n"
-                "- If the user asks to DRAW, PLOT, or GRAPH an equation, explain the equation first, then supply a Python block with `plt.figure()` and `plt.plot()` defining `fig` at the very end.\n"
-                "- If the user asks to GENERATE AN IMAGE, DIAGRAM, or ILLUSTRATION, supply a valid, clean SVG vector illustration enclosed inside an ```xml ``` block.\n"
-                "- Never show raw code explanations unless the word 'code' was explicitly requested."
+                "OUTPUT RULES:\n"
+                "- If the user asks to DRAW, PLOT, or GRAPH an equation: explain the equation first, then supply a Python code block with plt.figure() and plt.plot() defining fig at the end.\n"
+                "- If the user asks to GENERATE AN IMAGE, DIAGRAM, or ILLUSTRATION: output a valid SVG XML code block enclosed in triple backticks with xml tag.\n"
+                "- Do not show raw code explanations unless code was explicitly requested."
             )
             
             master_system_prompt = call_groq(
@@ -159,10 +159,10 @@ if st.button("Deploy 20-Brain Mega-Council", type="primary"):
                 temp=0.4
             )
 
-            status.write("🧠 Compiling standalone production code...")
+            status.write("Compiling standalone production code...")
             code_prompt = (
                 f"Write a standalone Streamlit Python app implementing this directive:\n{master_system_prompt}\n\n"
-                "Output ONLY executable Python code inside a single ```python ``` code block."
+                "Output ONLY executable Python code inside a single markdown code block with python tag."
             )
             raw_code = call_groq(
                 [{"role": "user", "content": code_prompt}],
@@ -186,13 +186,13 @@ if st.session_state.configured_app:
     app_info = st.session_state.configured_app
     st.markdown("---")
 
-    tab1, tab2 = st.tabs(["⚡ Live 20-Brain Council Workspace", "📄 Standalone Code (.py)"])
+    tab1, tab2 = st.tabs(["Live 20-Brain Council Workspace", "Standalone Code (.py)"])
 
     with tab1:
         st.subheader("Autonomous Mega-Council Active")
         st.caption(f"Council Objective: {app_info['goal']}")
 
-        st.markdown("#### 📷 Image & Media Input")
+        st.markdown("#### Image & Media Input")
         uploaded_file = st.file_uploader(
             "Upload an image, diagram, circuit photo, or document:",
             type=["png", "jpg", "jpeg"],
@@ -206,7 +206,7 @@ if st.session_state.configured_app:
                 st.session_state.persisted_image_mime = uploaded_file.type
 
         if st.session_state.get("persisted_image_b64"):
-            st.success("✅ Image loaded into Vision Brain memory.")
+            st.success("Image loaded into Vision Brain memory.")
             col_img, col_btn = st.columns([3, 1])
             with col_img:
                 st.image(
@@ -215,7 +215,7 @@ if st.session_state.configured_app:
                     width=280
                 )
             with col_btn:
-                if st.button("❌ Remove Image"):
+                if st.button("Remove Image"):
                     st.session_state.persisted_image_b64 = None
                     st.session_state.persisted_image_mime = None
                     st.rerun()
@@ -226,11 +226,9 @@ if st.session_state.configured_app:
                 if msg.get("text_content"):
                     st.markdown(msg["text_content"])
                 
-                # Render SVG image if generated
                 if msg.get("svg_content"):
                     st.markdown(msg["svg_content"], unsafe_allow_html=True)
                 
-                # Render Python Matplotlib Plot if generated
                 if msg.get("plot_code"):
                     try:
                         exec_env = {"np": np, "plt": plt}
@@ -254,5 +252,76 @@ if st.session_state.configured_app:
                         f"{app_info['system_prompt']}\n\n"
                         "OPERATIONAL DIRECTIVES:\n"
                         "1. Answer in clear, polite English with intuitive explanations.\n"
-                        "2. IF DRAWING A GRAPH OR EQUATION: Provide the mathematical explanation first. At the very end, provide ONLY executable plotting code using `matplotlib.pyplot as plt` and `numpy as np` defining a figure variable named `fig` inside a ```python ``` code block.\n"
-                        "3. IF GENERATING A DIAGRAM OR IMAGE: Output an inline SVG XML representation inside an ```xml
+                        "2. IF DRAWING A GRAPH OR EQUATION: Provide the mathematical explanation first. At the end, provide executable plotting code with matplotlib.pyplot as plt and numpy as np defining fig inside a python code block.\n"
+                        "3. IF GENERATING A DIAGRAM OR IMAGE: Output an inline SVG XML representation inside an xml code block so it renders on screen.\n"
+                        "4. Never output internal thoughts or planning notes."
+                    )
+
+                    img_b64 = st.session_state.get("persisted_image_b64")
+                    img_mime = st.session_state.get("persisted_image_mime", "image/png")
+
+                    if img_b64:
+                        user_content = [
+                            {"type": "text", "text": user_input},
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:{img_mime};base64,{img_b64}"
+                                }
+                            }
+                        ]
+                        messages = [
+                            {"role": "system", "content": council_system},
+                            {"role": "user", "content": user_content}
+                        ]
+                        reply = call_groq(messages, model=PRIMARY_VISION_MODEL, max_tok=1200, temp=0.4)
+                    else:
+                        messages = [{"role": "system", "content": council_system}]
+                        for m in st.session_state.chat_history:
+                            if m.get("text_content"):
+                                messages.append({"role": m["role"], "content": m["text_content"]})
+                        reply = call_groq(messages, model=PRIMARY_TEXT_MODEL, max_tok=1400, temp=0.4)
+
+                    if reply:
+                        svg_match = re.search(r"```xml\s*(<svg.*?</svg>)\s*```", reply, re.DOTALL | re.IGNORECASE)
+                        svg_code = svg_match.group(1) if svg_match else None
+
+                        plot_match = re.search(r"```(?:python)?\s*(.*?fig\s*=.*?)\s*```", reply, re.DOTALL)
+                        plot_code = plot_match.group(1) if plot_match else None
+
+                        cleaned_text = re.sub(r"```xml\s*<svg.*?</svg>\s*```", "", reply, flags=re.DOTALL | re.IGNORECASE)
+                        cleaned_text = re.sub(r"```(?:python)?\s*.*?fig\s*=.*?\s*```", "", cleaned_text, flags=re.DOTALL).strip()
+
+                        if cleaned_text:
+                            st.markdown(cleaned_text)
+
+                        if svg_code:
+                            st.markdown(svg_code, unsafe_allow_html=True)
+
+                        if plot_code:
+                            try:
+                                exec_env = {"np": np, "plt": plt}
+                                exec(plot_code, exec_env)
+                                fig = exec_env.get("fig") or plt.gcf()
+                                st.pyplot(fig)
+                                plt.clf()
+                            except Exception as err:
+                                st.caption(f"(Graph rendering error: {err})")
+
+                        st.session_state.chat_history.append({
+                            "role": "assistant",
+                            "text_content": cleaned_text,
+                            "svg_content": svg_code,
+                            "plot_code": plot_code
+                        })
+
+    with tab2:
+        st.subheader("Generated Python Code")
+        st.caption("Complete code compiled across all 20 specialist brains:")
+        st.code(app_info["source_code"], language="python")
+        st.download_button(
+            "Download Source Code (.py)",
+            data=app_info["source_code"],
+            file_name="custom_ai_app.py",
+            mime="text/plain"
+        )
