@@ -112,14 +112,16 @@ def build_pptx_bytes(presentation_data):
     prs.save(buf)
     return buf.getvalue()
 
-def fetch_media_bytes(url, timeout=45):
+def fetch_media_bytes(url, timeout=35):
     try:
         resp = requests.get(url, timeout=timeout)
-        if resp.status_code == 200 and len(resp.content) > 1000:
-            return resp.content
+        content_type = resp.headers.get("content-type", "")
+        # Only accept valid binary media, not HTML error pages
+        if resp.status_code == 200 and len(resp.content) > 10000 and "html" not in content_type:
+            return resp.content, content_type
     except Exception:
         pass
-    return None
+    return None, None
 
 # Read Secrets
 api_key = ""
@@ -273,7 +275,10 @@ if "ai_creativity" not in st.session_state:
 if "ai_max_tokens" not in st.session_state:
     st.session_state.ai_max_tokens = 1400
 if "ai_custom_trait" not in st.session_state:
-    st.session_state.ai_custom_trait = "Articulate, polite, visually rich with video/image capabilities, and rigorous."
+    st.session_state.ai_custom_trait = (
+        "Articulate, polite, visually rich. "
+        "When the user mentions a topic or asks for visuals, briefly describe it and supply a visual prompt."
+    )
 
 # AI FACTORY CREATOR SECTION WITH VOICE COMMAND
 st.subheader("1. AI Factory Creator (Voice or Text)")
@@ -286,7 +291,7 @@ with col_creator_mic:
 with col_creator_text:
     user_request = st.text_area(
         "Describe or paste the AI tool you want the factory to create:",
-        placeholder="e.g. Build an AI assistant with voice input, video generation, PowerPoint creation, PDF documents, math graphs, and circuit explanations.",
+        placeholder="e.g. Build an AI assistant with voice input, animated video/GIF generation, PowerPoint creation, PDF documents, and math graphs.",
         height=100
     )
 
@@ -328,7 +333,7 @@ if st.button("Deploy AI with Mega Rayquaza Inner Core", type="primary"):
                 "23. Code Verification Brain\n"
                 "24. Universal Multi-Disciplinary Synthesizer\n\n"
                 "OPERATIONAL OUTPUT RULES:\n"
-                "- If the user requests a VIDEO, ANIMATION, or CLIP: Describe the motion scene, then on the last line output: `VIDEO_PROMPT: <detailed dynamic motion description in English>`\n"
+                "- If the user enters a topic (like 'wormholes', 'galaxy') or requests a VIDEO/ANIMATION: Explain the concept concisely, then on the last line output: `VIDEO_PROMPT: <detailed motion description in English>`\n"
                 "- If the user requests an IMAGE or PICTURE: Describe it, then on the last line output: `IMAGE_PROMPT: <visual prompt>`\n"
                 "- If the user requests a PRESENTATION, SLIDES, or PPT: Output a clean JSON block inside ```json ``` with structure: {\"slides\": [{\"title\": \"...\", \"bullets\": [\"...\", \"...\"]}]}.\n"
                 "- If the user requests a PDF, REPORT, or NOTES: Provide the full structured document text and conclude with `GENERATE_PDF: <Document Title>`.\n"
@@ -412,7 +417,7 @@ if st.session_state.configured_app:
         st.subheader("2. Your Active Custom AI")
         st.caption(f"Council Objective: {app_info['goal']} | Inner Core: Mega Rayquaza Activated")
 
-        st.markdown("#### 🎙️️ Media & Voice Interaction")
+        st.markdown("#### 🎙️ Media & Voice Interaction")
         col_up, col_chat_mic = st.columns([2, 1])
 
         with col_up:
@@ -452,12 +457,15 @@ if st.session_state.configured_app:
                 if msg.get("text_content"):
                     st.markdown(msg["text_content"])
                 
-                # Render Generated Video from bytes
+                # Render verified video/animation
                 if msg.get("video_bytes"):
                     st.video(msg["video_bytes"])
-                elif msg.get("video_url"):
-                    st.video(msg["video_url"])
-                
+                elif msg.get("visual_url"):
+                    st.image(msg["visual_url"], caption="Generated Motion Visualization", use_container_width=True)
+
+                if msg.get("video_link"):
+                    st.markdown(f"🔗 [Direct Video Link / Browser Player]({msg['video_link']})")
+
                 # Render Generated Image
                 if msg.get("image_url"):
                     st.image(msg["image_url"], caption="Generated via Mega Rayquaza Visual Core", use_container_width=True)
@@ -492,7 +500,7 @@ if st.session_state.configured_app:
                     )
 
         # Chat Input Bar
-        user_input = st.chat_input("Ask a question, generate video (e.g. 'generate video of ocean waves'), create PPT, or plot a graph...")
+        user_input = st.chat_input("Ask a question, generate video/visuals (e.g. 'wormholes'), create PPT, or plot a graph...")
         if user_input:
             st.session_state.chat_history.append({"role": "user", "text_content": user_input})
             with st.chat_message("user"):
@@ -505,11 +513,11 @@ if st.session_state.configured_app:
                         f"{app_info['system_prompt']}\n\n"
                         f"USER-CONFIGURED PERSONALITY & TRAITS:\n{st.session_state.ai_custom_trait}\n\n"
                         "OPERATIONAL DIRECTIVES:\n"
-                        "1. Answer with clarity, authority, and polite pedagogical instruction.\n"
-                        "2. IF THE USER ASKS FOR A VIDEO/ANIMATION/CLIP: Describe the scene in 1-2 sentences, then on the last line output: `VIDEO_PROMPT: <cinematic motion prompt in English>`\n"
+                        "1. Answer with clarity, authority, and pedagogical instruction.\n"
+                        "2. IF THE USER ASKS FOR A VIDEO/ANIMATION OR TYPES A TOPIC TO VISUALIZE: Explain the scene concisely, then on the last line output: `VIDEO_PROMPT: <vivid visual motion prompt in English>`\n"
                         "3. IF THE USER ASKS FOR AN IMAGE/PICTURE: Describe it, then on the last line output: `IMAGE_PROMPT: <vivid visual description in English>`\n"
-                        "4. IF THE USER ASKS FOR A PRESENTATION/SLIDES/PPT: Provide a summary in text, then output a JSON block inside ```json ``` with structure: {\"slides\": [{\"title\": \"...\", \"bullets\": [\"...\", \"...\"]}]}.\n"
-                        "5. IF THE USER ASKS FOR A PDF/REPORT/NOTES: Write the document thoroughly, and finish on the last line with: `GENERATE_PDF: <Title>`.\n"
+                        "4. IF THE USER ASKS FOR A PRESENTATION/SLIDES/PPT: Output a JSON block inside ```json ``` with structure: {\"slides\": [{\"title\": \"...\", \"bullets\": [\"...\", \"...\"]}]}.\n"
+                        "5. IF THE USER ASKS FOR A PDF/REPORT/NOTES: Write the document, and finish on the last line with: `GENERATE_PDF: <Title>`.\n"
                         "6. IF DRAWING A GRAPH: Supply executable plotting code using matplotlib.pyplot as plt and numpy as np defining fig inside a python code block.\n"
                         "7. Never output internal thoughts or planning notes."
                     )
@@ -543,22 +551,27 @@ if st.session_state.configured_app:
                         reply = call_groq(messages, model=PRIMARY_TEXT_MODEL, max_tok=current_tokens, temp=current_temp)
 
                     if reply:
-                        video_url = None
                         video_bytes = None
+                        visual_url = None
+                        video_link = None
+
                         vid_prompt_match = re.search(r"VIDEO_PROMPT:\s*(.+)", reply, re.IGNORECASE)
                         if vid_prompt_match:
                             raw_vid_prompt = vid_prompt_match.group(1).strip()
                             clean_vid_prompt = re.sub(r"[^\w\s,.-]", "", raw_vid_prompt)
-                            encoded_vid = urllib.parse.quote(clean_vid_prompt[:250])
-                            video_url = f"https://image.pollinations.ai/prompt/{encoded_vid}?model=video&width=512&height=512"
+                            encoded_vid = urllib.parse.quote(clean_vid_prompt[:220])
                             
-                            # Download video bytes with a dedicated status spinner
-                            with st.spinner("Compiling and downloading video frames from Delta Stream..."):
-                                video_bytes = fetch_media_bytes(video_url, timeout=45)
+                            video_link = f"https://image.pollinations.ai/prompt/{encoded_vid}?model=video&width=512&height=512"
+                            visual_url = f"https://image.pollinations.ai/prompt/{encoded_vid}?width=768&height=432&nologo=true"
+                            
+                            with st.spinner("Retrieving video frames from Delta Stream..."):
+                                v_bytes, c_type = fetch_media_bytes(video_link, timeout=25)
+                                if v_bytes and "video" in (c_type or ""):
+                                    video_bytes = v_bytes
 
                         image_url = None
                         img_prompt_match = re.search(r"IMAGE_PROMPT:\s*(.+)", reply, re.IGNORECASE)
-                        if img_prompt_match and not video_url:
+                        if img_prompt_match and not vid_prompt_match:
                             raw_prompt = img_prompt_match.group(1).strip()
                             clean_prompt = re.sub(r"[^\w\s,.-]", "", raw_prompt)
                             encoded_prompt = urllib.parse.quote(clean_prompt[:250])
@@ -596,9 +609,11 @@ if st.session_state.configured_app:
 
                         if video_bytes:
                             st.video(video_bytes)
-                        elif video_url:
-                            # Fallback if download timed out
-                            st.video(video_url)
+                        elif visual_url:
+                            st.image(visual_url, caption="Generated Visual Sequence", use_container_width=True)
+
+                        if video_link:
+                            st.markdown(f"🔗 [Direct Video Link / Browser Player]({video_link})")
 
                         if image_url:
                             st.image(image_url, caption="Generated via Mega Rayquaza Visual Core", use_container_width=True)
@@ -636,7 +651,8 @@ if st.session_state.configured_app:
                             "role": "assistant",
                             "text_content": cleaned_text,
                             "video_bytes": video_bytes,
-                            "video_url": video_url,
+                            "visual_url": visual_url,
+                            "video_link": video_link,
                             "image_url": image_url,
                             "plot_code": plot_code,
                             "pdf_data": pdf_data,
