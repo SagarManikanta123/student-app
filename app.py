@@ -5,7 +5,7 @@ import re
 st.set_page_config(page_title="AI App Factory", layout="wide")
 
 st.title("AI App Factory")
-st.caption("Custom AI Creator Engine")
+st.caption("Multi-Stage AI Generator: Intent → Persona → Logic → Guardrails → Code Engine")
 
 def sanitize_text(text):
     if not text:
@@ -20,7 +20,7 @@ def extract_clean_code(text):
         return match.group(1).strip()
     return text.strip()
 
-# Read API Key from Secrets or Sidebar
+# Automatically fetch API Key from Secrets
 api_key = ""
 if "GROQ_API_KEY" in st.secrets:
     api_key = sanitize_text(st.secrets["GROQ_API_KEY"])
@@ -31,10 +31,9 @@ if not api_key:
         raw_key = st.text_input("Groq API Key", type="password")
         api_key = sanitize_text(raw_key)
 
-# Fast, stable default model
 ACTIVE_MODEL = "openai/gpt-oss-20b"
 
-def call_groq(messages, model, key, max_tok=600):
+def call_groq(messages, model, key, max_tok=1800):
     clean_k = sanitize_text(key)
     headers = {
         "Authorization": f"Bearer {clean_k}",
@@ -52,7 +51,7 @@ def call_groq(messages, model, key, max_tok=600):
             "https://api.groq.com/openai/v1/chat/completions",
             headers=headers,
             json=payload,
-            timeout=15
+            timeout=35
         )
         if res.status_code == 200:
             msg = res.json()["choices"][0]["message"]
@@ -85,36 +84,39 @@ if st.button("Build AI Tool", type="primary"):
     elif not user_request.strip():
         st.warning("Please describe what AI tool you want to create.")
     else:
-        with st.spinner("Factory Engine: Synthesizing architecture and code..."):
-            # Brain 1: Master Specification & Prompt Architecture
+        with st.status("Factory Engine: Engineering architecture and building tool...", expanded=True) as status:
+            status.write("🧠 Phase 1: Synthesizing Persona, Intent, Algorithm & Output Guardrails...")
             architect_prompt = (
-                f"You are a master AI architect. A user wants to build an AI tool with this purpose:\n'{user_request}'\n\n"
-                "Synthesize a complete operational system directive covering all key engineering stages:\n"
-                "1. Core Persona & Tone\n"
-                "2. Step-by-Step Reasoning Logic\n"
-                "3. Edge Cases & Boundary Handling\n"
-                "4. Exact Formatting Rules\n\n"
-                "Output the final system prompt directly."
+                f"You are a master AI systems architect. A user wants to build an AI assistant with this specification:\n'{user_request}'\n\n"
+                "Synthesize a complete operational system directive covering all essential engineering stages:\n"
+                "1. Exact Role & Technical Persona\n"
+                "2. Step-by-Step Problem Solving & Reasoning Protocol\n"
+                "3. Edge Cases & Input Validation Handling\n"
+                "4. Strict Output Formatting Rules (clean explanations, math syntax, step-by-step guidance)\n\n"
+                "Write the complete, detailed system instructions directly."
             )
             master_spec = call_groq(
                 [{"role": "user", "content": architect_prompt}],
                 ACTIVE_MODEL,
                 api_key,
-                max_tok=600
+                max_tok=900
             )
 
-            # Brain 2: Standalone Code Generator
+            status.write("🧠 Phase 2: Generating full standalone Python package...")
             clean_code = "# Standalone code generation skipped."
             if master_spec:
                 code_prompt = (
-                    f"Create a clean standalone Streamlit Python app implementing this logic:\n{master_spec}\n\n"
-                    "Output ONLY the python code wrapped inside a single ```python ``` code block."
+                    f"Write a complete, bug-free standalone Python Streamlit application that implements this specification:\n{master_spec}\n\n"
+                    "Requirements:\n"
+                    "- Include all necessary library imports (e.g., streamlit, numpy, matplotlib, sympy if needed).\n"
+                    "- Write the full, working implementation without placeholders or cutting off early.\n"
+                    "- Return ONLY valid Python code enclosed in a single ```python ``` block."
                 )
                 raw_code = call_groq(
                     [{"role": "user", "content": code_prompt}],
                     ACTIVE_MODEL,
                     api_key,
-                    max_tok=700
+                    max_tok=1800
                 )
                 if raw_code:
                     clean_code = extract_clean_code(raw_code)
@@ -125,7 +127,7 @@ if st.button("Build AI Tool", type="primary"):
                 "source_code": clean_code
             }
             st.session_state.chat_history = []
-            st.success("Custom AI Built Successfully!")
+            status.update(label="Custom AI Built Successfully!", state="complete", expanded=False)
 
 # Display Active Workspace
 if st.session_state.configured_app:
@@ -154,13 +156,14 @@ if st.session_state.configured_app:
                     for m in st.session_state.chat_history:
                         messages.append({"role": m["role"], "content": m["content"]})
 
-                    reply = call_groq(messages, ACTIVE_MODEL, api_key, max_tok=500)
+                    reply = call_groq(messages, ACTIVE_MODEL, api_key, max_tok=1000)
                     if reply:
                         st.markdown(reply)
                         st.session_state.chat_history.append({"role": "assistant", "content": reply})
 
     with tab2:
         st.subheader("Generated Python Code")
+        st.caption("Complete, standalone code package ready to download and run:")
         st.code(app_info["source_code"], language="python")
         st.download_button(
             "Download Source Code (.py)",
