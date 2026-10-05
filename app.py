@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 st.set_page_config(page_title="20-Brain Mega-Council Factory", layout="wide")
 
 st.title("Universal AI Factory (20-Specialist Council)")
-st.caption("Orchestrated across 20 specialized domains with verified multi-engine execution.")
+st.caption("Orchestrated across 20 specialized domains with automatic visual rendering.")
 
 def sanitize_text(text):
     if not text:
@@ -54,13 +54,12 @@ if not api_key:
         raw_key = st.text_input("Groq API Key", type="password")
         api_key = sanitize_text(raw_key)
 
-# Verified active Groq models
 PRIMARY_TEXT_MODEL = "openai/gpt-oss-120b"
 BACKUP_TEXT_MODEL = "openai/gpt-oss-20b"
 PRIMARY_VISION_MODEL = "qwen/qwen3.8-27b"
 BACKUP_VISION_MODEL = "llama-3.2-11b-vision-preview"
 
-def call_groq(messages, model=PRIMARY_TEXT_MODEL, key=api_key, max_tok=1400, temp=0.5):
+def call_groq(messages, model=PRIMARY_TEXT_MODEL, key=api_key, max_tok=1400, temp=0.4):
     clean_k = sanitize_text(key)
     headers = {
         "Authorization": f"Bearer {clean_k}",
@@ -112,7 +111,7 @@ if "persisted_image_mime" not in st.session_state:
 
 user_request = st.text_area(
     "What kind of AI tool do you want to create?",
-    placeholder="e.g. Build an AI that can inspect circuits/photos, solve complex math and physics, generate code, draw graphs, and explain hardware clearly."
+    placeholder="e.g. Build an AI that can draw graphs, inspect circuits/photos, solve math and physics, and explain concepts simply without dumping raw code."
 )
 
 if st.button("Deploy 20-Brain Mega-Council", type="primary"):
@@ -133,21 +132,23 @@ if st.button("Deploy 20-Brain Mega-Council", type="primary"):
                 "4. Theoretical & Classical Physics Engine (Kinematics, Optics, Forces)\n"
                 "5. Chemistry & Material Dynamics Specialist (Reactions, Balancing, Molecules)\n"
                 "6. Computer Science & Algorithm Engine (Data Structures, Logic)\n"
-                "7. Software Engineering Brain (Complete Executable Scripts, Zero Placeholders)\n"
-                "8. Microcontroller Firmware Specialist (C/C++, GPIO, Registers, Timers)\n"
-                "9. Life Sciences & Bioengineering Brain (Physiology, Genetics, Biology)\n"
-                "10. Statistical Modeling Brain (Probability, Analytics, Distributions)\n"
+                "7. Software Engineering Brain\n"
+                "8. Microcontroller Firmware Specialist (C/C++, GPIO, Registers)\n"
+                "9. Life Sciences & Bioengineering Brain (Biology, Physiology)\n"
+                "10. Statistical Modeling Brain (Probability, Analytics)\n"
                 "11. Dynamic Visualizer & Plotting Engine (Matplotlib/Plotly Figures)\n"
                 "12. Creative Analogy Architect (Intuitive Real-World Comparisons)\n"
                 "13. Pedagogical Manners Brain (Warm, Encouraging, Respectful Tone)\n"
-                "14. History & Civics Brain (Context, Timelines, Social Systems)\n"
-                "15. Linguistics & Language Arts Specialist (Clarity, Rhetoric, Grammar)\n"
-                "16. Edge Case & Failure Analyst (Electrical shorts, Boundary errors, Zero-division)\n"
-                "17. Code Verification Brain (Pre-checking library imports and runtime safety)\n"
-                "18. Output Guardrail Brain (Preventing thought-leaks and formatting cleanly)\n"
+                "14. History & Civics Brain (Context, Timelines)\n"
+                "15. Linguistics & Language Arts Specialist (Clarity, Rhetoric)\n"
+                "16. Edge Case & Failure Analyst (Boundary errors, Zero-division)\n"
+                "17. Code Verification Brain (Pre-checking runtime safety)\n"
+                "18. Output Guardrail Brain (Preventing thought-leaks)\n"
                 "19. Universal Cross-Disciplinary Tutor (Connecting all fields)\n"
                 "20. Council Moderator (Unified coherent output formulation)\n\n"
-                "Output the final unified system prompt directly. Enforce zero meta-chatter, complete code blocks, and thorough explanations."
+                "CRITICAL OUTPUT RULE: Never dump raw Python code to users unless they explicitly ask for code. "
+                "Explain everything conceptually and mathematically in plain text. "
+                "If a plot or graph is required, write only the executable plotting block inside a ```python ``` block at the very end so the system can render it visually."
             )
             
             master_system_prompt = call_groq(
@@ -160,7 +161,7 @@ if st.button("Deploy 20-Brain Mega-Council", type="primary"):
             status.write("🧠 Compiling standalone Python package...")
             code_prompt = (
                 f"Write a complete standalone Streamlit application based on this directive:\n{master_system_prompt}\n\n"
-                "REQUIREMENTS: Return ONLY executable Python code inside a single ```python ``` block. Include all imports."
+                "REQUIREMENTS: Return ONLY executable Python code inside a single ```python ``` block."
             )
             raw_code = call_groq(
                 [{"role": "user", "content": code_prompt}],
@@ -218,10 +219,12 @@ if st.session_state.configured_app:
                     st.session_state.persisted_image_mime = None
                     st.rerun()
 
+        # Render conversation history
         for msg in st.session_state.chat_history:
             with st.chat_message(msg["role"]):
-                st.markdown(msg["content"])
-                if "plot_code" in msg:
+                if msg.get("text_content"):
+                    st.markdown(msg["text_content"])
+                if msg.get("plot_code"):
                     try:
                         exec_env = {"np": np, "plt": plt}
                         exec(msg["plot_code"], exec_env)
@@ -231,24 +234,22 @@ if st.session_state.configured_app:
                     except Exception:
                         pass
 
-        user_input = st.chat_input("Ask any question, request code, inspect hardware photos, or plot graphs...")
+        user_input = st.chat_input("Ask any question, request explanations, inspect hardware, or plot graphs...")
         if user_input:
-            st.session_state.chat_history.append({"role": "user", "content": user_input})
+            st.session_state.chat_history.append({"role": "user", "text_content": user_input})
             with st.chat_message("user"):
                 st.markdown(user_input)
 
             with st.chat_message("assistant"):
-                with st.spinner("20-Brain Council analyzing and synthesizing consensus..."):
+                with st.spinner("20-Brain Council analyzing and generating output..."):
                     council_system = (
                         f"You are the deployed expert AI system created for: {app_info['goal']}.\n"
                         f"{app_info['system_prompt']}\n\n"
                         "OPERATIONAL DIRECTIVES:\n"
-                        "1. Answer with creative depth, high intuition, and practical real-world analogies.\n"
-                        "2. Maintain an articulate, polite, and encouraging tone.\n"
-                        "3. Provide complete, fully detailed code solutions and pinout breakdowns where requested.\n"
-                        "4. When an image is attached, inspect all labels, components, equations, or features thoroughly.\n"
-                        "5. If generating graphs or plotting an equation, provide clean Python code using `matplotlib.pyplot as plt` and `numpy as np` defining a figure named `fig`. Do not call `plt.show()`.\n"
-                        "6. Never output meta-thoughts or 'We need to' notes.\n"
+                        "1. Answer in clear, polite English with intuitive analogies and step-by-step mathematical reasoning.\n"
+                        "2. DO NOT show raw Python code blocks in your explanation unless the user specifically typed the word 'code'.\n"
+                        "3. If the user asks to draw or plot a graph, provide the explanation first. At the very end of your response, write ONLY the executable Python script defining `fig` inside a ```python ``` block so the frontend can render it visually.\n"
+                        "4. Never output internal planning notes or 'We need to' scratchpads.\n"
                     )
 
                     img_b64 = st.session_state.get("persisted_image_b64")
@@ -268,32 +269,46 @@ if st.session_state.configured_app:
                             {"role": "system", "content": council_system},
                             {"role": "user", "content": user_content}
                         ]
-                        reply = call_groq(messages, model=PRIMARY_VISION_MODEL, max_tok=1200, temp=0.5)
+                        reply = call_groq(messages, model=PRIMARY_VISION_MODEL, max_tok=1200, temp=0.4)
                     else:
                         messages = [{"role": "system", "content": council_system}]
                         for m in st.session_state.chat_history:
-                            messages.append({"role": m["role"], "content": m["content"]})
-                        reply = call_groq(messages, model=PRIMARY_TEXT_MODEL, max_tok=1400, temp=0.5)
+                            if m.get("text_content"):
+                                messages.append({"role": m["role"], "content": m["text_content"]})
+                        reply = call_groq(messages, model=PRIMARY_TEXT_MODEL, max_tok=1400, temp=0.4)
 
                     if reply:
-                        st.markdown(reply)
+                        # Extract plot code
+                        code_match = re.search(r"```(?:python)?\s*(.*?fig\s*=.*?)\s*```", reply, re.DOTALL)
+                        
+                        # Strip code block out of the conversational display unless explicitly requested
+                        text_to_show = reply
+                        plot_code_to_run = None
+                        
+                        if code_match and "code" not in user_input.lower():
+                            plot_code_to_run = code_match.group(1)
+                            # Remove the code block from the visible text bubble
+                            text_to_show = re.sub(r"```(?:python)?\s*.*?fig\s*=.*?\s*```", "", reply, flags=re.DOTALL).strip()
 
-                        code_match = re.search(r"```python\s*(.*?fig\s*=.*?)\s*```", reply, re.DOTALL)
-                        entry = {"role": "assistant", "content": reply}
+                        if text_to_show:
+                            st.markdown(text_to_show)
 
-                        if code_match:
-                            extracted_plot = code_match.group(1)
+                        # Render the actual visual plot
+                        if plot_code_to_run:
                             try:
                                 exec_env = {"np": np, "plt": plt}
-                                exec(extracted_plot, exec_env)
+                                exec(plot_code_to_run, exec_env)
                                 fig = exec_env.get("fig") or plt.gcf()
                                 st.pyplot(fig)
                                 plt.clf()
-                                entry["plot_code"] = extracted_plot
                             except Exception:
                                 pass
 
-                        st.session_state.chat_history.append(entry)
+                        st.session_state.chat_history.append({
+                            "role": "assistant",
+                            "text_content": text_to_show,
+                            "plot_code": plot_code_to_run
+                        })
 
     with tab2:
         st.subheader("Generated Python Code")
