@@ -5,10 +5,10 @@ import base64
 import numpy as np
 import matplotlib.pyplot as plt
 
-st.set_page_config(page_title="Llama-3.3 70B Council Factory", layout="wide")
+st.set_page_config(page_title="20-Brain Mega-Council Factory", layout="wide")
 
-st.title("Universal AI Factory (14-Brain Mega-Council)")
-st.caption("Powered by Meta Llama 3.3 70B Versatile & Llama 3.2 Vision")
+st.title("Universal AI Factory (20-Specialist Council)")
+st.caption("Orchestrated across 20 specialized domains with verified multi-engine execution.")
 
 def sanitize_text(text):
     if not text:
@@ -54,38 +54,51 @@ if not api_key:
         raw_key = st.text_input("Groq API Key", type="password")
         api_key = sanitize_text(raw_key)
 
-# The most powerful text and vision models available on Groq
-FLAGSHIP_MODEL = "llama-3.3-70b-versatile"
-VISION_MODEL = "llama-3.2-11b-vision-preview"
+# Verified active Groq models
+PRIMARY_TEXT_MODEL = "openai/gpt-oss-120b"
+BACKUP_TEXT_MODEL = "openai/gpt-oss-20b"
+PRIMARY_VISION_MODEL = "qwen/qwen3.8-27b"
+BACKUP_VISION_MODEL = "llama-3.2-11b-vision-preview"
 
-def call_groq(messages, model=FLAGSHIP_MODEL, key=api_key, max_tok=1400, temp=0.5):
+def call_groq(messages, model=PRIMARY_TEXT_MODEL, key=api_key, max_tok=1400, temp=0.5):
     clean_k = sanitize_text(key)
     headers = {
         "Authorization": f"Bearer {clean_k}",
         "Content-Type": "application/json",
         "User-Agent": "Mozilla/5.0"
     }
-    payload = {
-        "model": model,
-        "messages": messages,
-        "temperature": temp,
-        "max_tokens": max_tok
-    }
-    try:
-        res = requests.post(
-            "https://api.groq.com/openai/v1/chat/completions",
-            headers=headers,
-            json=payload,
-            timeout=45
-        )
-        if res.status_code == 200:
-            msg = res.json()["choices"][0]["message"]
-            content = msg.get("content") or msg.get("reasoning") or ""
-            return strip_internal_thoughts(content)
-        else:
-            return f"API Error ({res.status_code}): {res.text}"
-    except Exception as exc:
-        return f"Request failed: {exc}"
+
+    models_to_try = [model]
+    if model == PRIMARY_TEXT_MODEL:
+        models_to_try.append(BACKUP_TEXT_MODEL)
+    elif model == PRIMARY_VISION_MODEL:
+        models_to_try.append(BACKUP_VISION_MODEL)
+
+    last_error = ""
+    for candidate in models_to_try:
+        payload = {
+            "model": candidate,
+            "messages": messages,
+            "temperature": temp,
+            "max_tokens": max_tok
+        }
+        try:
+            res = requests.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers=headers,
+                json=payload,
+                timeout=40
+            )
+            if res.status_code == 200:
+                msg = res.json()["choices"][0]["message"]
+                content = msg.get("content") or msg.get("reasoning") or ""
+                return strip_internal_thoughts(content)
+            else:
+                last_error = f"API Error ({res.status_code}): {res.text}"
+        except Exception as exc:
+            last_error = f"Request failed: {exc}"
+            
+    return last_error
 
 # State Initialization
 if "configured_app" not in st.session_state:
@@ -99,57 +112,59 @@ if "persisted_image_mime" not in st.session_state:
 
 user_request = st.text_area(
     "What kind of AI tool do you want to create?",
-    placeholder="e.g. Build an AI that can inspect circuits/photos, solve complex math and physics, generate code, draw graphs, and explain everything with creative analogies."
+    placeholder="e.g. Build an AI that can inspect circuits/photos, solve complex math and physics, generate code, draw graphs, and explain hardware clearly."
 )
 
-if st.button("Deploy Mega-Council AI", type="primary"):
+if st.button("Deploy 20-Brain Mega-Council", type="primary"):
     if not api_key:
         st.error("Please add GROQ_API_KEY to Streamlit Secrets.")
     elif not user_request.strip():
         st.warning("Please describe what tool you want to create.")
     else:
-        with st.status(f"Concurring 14-Brain Council via {FLAGSHIP_MODEL}...", expanded=True) as status:
-            status.write("🧠 Phase 1: Synthesizing perspectives across all 14 specialist departments...")
+        with st.status("Concurring 20-Brain Mega-Council...", expanded=True) as status:
+            status.write("🧠 Orchestrating all 20 specialized departments...")
             
             council_synthesis_prompt = (
-                f"You are the supreme Council Moderator. A user wants to build an AI system designed to: '{user_request}'.\n\n"
-                "Convene the 14 specialist brains:\n"
-                "1. Vision & Media Inspector\n"
-                "2. Creative Analogy Architect\n"
-                "3. Polite Tone & Pedagogy Brain\n"
-                "4. Mathematics Engine\n"
-                "5. Physics & Mechanics Specialist\n"
-                "6. Electrical & Microcontroller Engineering Specialist\n"
-                "7. Computer Science & Coding Engine\n"
-                "8. Chemistry & Material Science Specialist\n"
-                "9. Life Sciences & Biology Specialist\n"
-                "10. Humanities & History Brain\n"
-                "11. Language & Prose Specialist\n"
-                "12. Dynamic Visualization & Plotting Engine\n"
-                "13. Resilience & Input Validation Brain\n"
-                "14. Universal Cross-Disciplinary Tutor\n\n"
-                "Synthesize their combined operational directive into a comprehensive, robust system prompt for this assistant. "
-                "Ensure it demands high creativity, vivid real-world analogies, full code implementations, and zero meta-reasoning leaks. "
-                "Output the final system prompt directly."
+                f"You are the Supreme Council Moderator. Synthesize an operational directive for this tool objective:\n'{user_request}'\n\n"
+                "Unify the principles of all 20 specialist brains:\n"
+                "1. Hardware & Electronics Specialist (Circuits, Arduino, Microcontrollers, Pinouts)\n"
+                "2. Vision & Diagram Inspector (OCR, Image Parsing, Visual Inspection)\n"
+                "3. Pure & Applied Mathematics Brain (Algebra, Calculus, Step-by-Step Proofs)\n"
+                "4. Theoretical & Classical Physics Engine (Kinematics, Optics, Forces)\n"
+                "5. Chemistry & Material Dynamics Specialist (Reactions, Balancing, Molecules)\n"
+                "6. Computer Science & Algorithm Engine (Data Structures, Logic)\n"
+                "7. Software Engineering Brain (Complete Executable Scripts, Zero Placeholders)\n"
+                "8. Microcontroller Firmware Specialist (C/C++, GPIO, Registers, Timers)\n"
+                "9. Life Sciences & Bioengineering Brain (Physiology, Genetics, Biology)\n"
+                "10. Statistical Modeling Brain (Probability, Analytics, Distributions)\n"
+                "11. Dynamic Visualizer & Plotting Engine (Matplotlib/Plotly Figures)\n"
+                "12. Creative Analogy Architect (Intuitive Real-World Comparisons)\n"
+                "13. Pedagogical Manners Brain (Warm, Encouraging, Respectful Tone)\n"
+                "14. History & Civics Brain (Context, Timelines, Social Systems)\n"
+                "15. Linguistics & Language Arts Specialist (Clarity, Rhetoric, Grammar)\n"
+                "16. Edge Case & Failure Analyst (Electrical shorts, Boundary errors, Zero-division)\n"
+                "17. Code Verification Brain (Pre-checking library imports and runtime safety)\n"
+                "18. Output Guardrail Brain (Preventing thought-leaks and formatting cleanly)\n"
+                "19. Universal Cross-Disciplinary Tutor (Connecting all fields)\n"
+                "20. Council Moderator (Unified coherent output formulation)\n\n"
+                "Output the final unified system prompt directly. Enforce zero meta-chatter, complete code blocks, and thorough explanations."
             )
             
             master_system_prompt = call_groq(
                 [{"role": "user", "content": council_synthesis_prompt}],
-                model=FLAGSHIP_MODEL,
-                max_tok=1000,
+                model=PRIMARY_TEXT_MODEL,
+                max_tok=1100,
                 temp=0.4
             )
 
-            status.write("🧠 Phase 2: Generating standalone production code package...")
+            status.write("🧠 Compiling standalone Python package...")
             code_prompt = (
-                f"Write a complete, bug-free standalone Python Streamlit app that implements this multi-brain system:\n{master_system_prompt}\n\n"
-                "CRITICAL REQUIREMENTS:\n"
-                "- Write fully functional, complete Python code.\n"
-                "- Output ONLY valid Python code inside a single ```python ``` code block."
+                f"Write a complete standalone Streamlit application based on this directive:\n{master_system_prompt}\n\n"
+                "REQUIREMENTS: Return ONLY executable Python code inside a single ```python ``` block. Include all imports."
             )
             raw_code = call_groq(
                 [{"role": "user", "content": code_prompt}],
-                model=FLAGSHIP_MODEL,
+                model=PRIMARY_TEXT_MODEL,
                 max_tok=1600,
                 temp=0.1
             )
@@ -161,7 +176,7 @@ if st.button("Deploy Mega-Council AI", type="primary"):
                 "source_code": clean_code
             }
             st.session_state.chat_history = []
-            status.update(label="14-Brain Mega-Council Deployed Successfully!", state="complete", expanded=False)
+            status.update(label="20-Brain Mega-Council Deployed!", state="complete", expanded=False)
             st.rerun()
 
 # Workspace UI
@@ -169,17 +184,17 @@ if st.session_state.configured_app:
     app_info = st.session_state.configured_app
     st.markdown("---")
 
-    tab1, tab2 = st.tabs(["⚡ Live 14-Brain Council Workspace", "📄 Standalone Code (.py)"])
+    tab1, tab2 = st.tabs(["⚡ Live 20-Brain Council Workspace", "📄 Standalone Code (.py)"])
 
     with tab1:
         st.subheader("Autonomous Mega-Council Active")
-        st.caption(f"Engine: {FLAGSHIP_MODEL} | Objective: {app_info['goal']}")
+        st.caption(f"Council Objective: {app_info['goal']}")
 
         st.markdown("#### 📷 Image & Media Input")
         uploaded_file = st.file_uploader(
             "Upload an image, diagram, circuit photo, or document:",
             type=["png", "jpg", "jpeg"],
-            key="mega_file_input"
+            key="mega_20_file_input"
         )
 
         if uploaded_file is not None:
@@ -216,23 +231,23 @@ if st.session_state.configured_app:
                     except Exception:
                         pass
 
-        user_input = st.chat_input("Ask a question, request code, explain diagrams/circuits, or explore any subject...")
+        user_input = st.chat_input("Ask any question, request code, inspect hardware photos, or plot graphs...")
         if user_input:
             st.session_state.chat_history.append({"role": "user", "content": user_input})
             with st.chat_message("user"):
                 st.markdown(user_input)
 
             with st.chat_message("assistant"):
-                with st.spinner("14-Brain Council analyzing with Llama 3.3 70B..."):
+                with st.spinner("20-Brain Council analyzing and synthesizing consensus..."):
                     council_system = (
-                        f"You are the deployed expert multi-domain AI tool created for: {app_info['goal']}.\n"
+                        f"You are the deployed expert AI system created for: {app_info['goal']}.\n"
                         f"{app_info['system_prompt']}\n\n"
-                        "OPERATIONAL RULES:\n"
+                        "OPERATIONAL DIRECTIVES:\n"
                         "1. Answer with creative depth, high intuition, and practical real-world analogies.\n"
                         "2. Maintain an articulate, polite, and encouraging tone.\n"
                         "3. Provide complete, fully detailed code solutions and pinout breakdowns where requested.\n"
                         "4. When an image is attached, inspect all labels, components, equations, or features thoroughly.\n"
-                        "5. If generating graphs, provide clean Python code using `matplotlib.pyplot as plt` and define `fig`.\n"
+                        "5. If generating graphs or plotting an equation, provide clean Python code using `matplotlib.pyplot as plt` and `numpy as np` defining a figure named `fig`. Do not call `plt.show()`.\n"
                         "6. Never output meta-thoughts or 'We need to' notes.\n"
                     )
 
@@ -253,12 +268,12 @@ if st.session_state.configured_app:
                             {"role": "system", "content": council_system},
                             {"role": "user", "content": user_content}
                         ]
-                        reply = call_groq(messages, model=VISION_MODEL, max_tok=1200, temp=0.5)
+                        reply = call_groq(messages, model=PRIMARY_VISION_MODEL, max_tok=1200, temp=0.5)
                     else:
                         messages = [{"role": "system", "content": council_system}]
                         for m in st.session_state.chat_history:
                             messages.append({"role": m["role"], "content": m["content"]})
-                        reply = call_groq(messages, model=FLAGSHIP_MODEL, max_tok=1400, temp=0.5)
+                        reply = call_groq(messages, model=PRIMARY_TEXT_MODEL, max_tok=1400, temp=0.5)
 
                     if reply:
                         st.markdown(reply)
@@ -282,7 +297,7 @@ if st.session_state.configured_app:
 
     with tab2:
         st.subheader("Generated Python Code")
-        st.caption("Complete code compiled across the 14-brain council architecture:")
+        st.caption("Complete code compiled across all 20 specialist brains:")
         st.code(app_info["source_code"], language="python")
         st.download_button(
             "Download Source Code (.py)",
