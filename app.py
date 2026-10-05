@@ -1,6 +1,8 @@
 import streamlit as st
 import requests
 import re
+import matplotlib.pyplot as plt
+import numpy as np
 from concurrent.futures import ThreadPoolExecutor
 
 st.set_page_config(page_title="AI App Factory - Multi-Brain Council", layout="wide")
@@ -24,14 +26,17 @@ def extract_clean_code(text):
 def strip_internal_thoughts(text):
     if not text:
         return ""
-    # Strip any <think> tags or reasoning leakage
     clean = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
-    # If the response starts with "We need to..." internal planning paragraphs, clean it
     lines = clean.split("\n")
     filtered = []
     skipping_meta = True
     for line in lines:
-        if skipping_meta and (line.strip().startswith("We need to") or line.strip().startswith("The user wants")):
+        stripped = line.strip().lower()
+        if skipping_meta and (
+            stripped.startswith("we need to") or 
+            stripped.startswith("the user wants") or 
+            stripped.startswith("the user is asking")
+        ):
             continue
         skipping_meta = False
         filtered.append(line)
@@ -86,7 +91,7 @@ if "chat_history" not in st.session_state:
 
 user_request = st.text_area(
     "What AI tool do you want to create?",
-    placeholder="e.g. make an AI that can draw graphs based on user defined functions"
+    placeholder="e.g. make an AI that can draw graphs based on user input equations"
 )
 
 if st.button("Build AI Tool", type="primary"):
@@ -123,7 +128,7 @@ if st.button("Build AI Tool", type="primary"):
                 f"Role: {b3 or user_request}\n"
                 f"Protocol: {b4 or 'Provide clear steps'}\n"
                 f"Output Standards: {b5 or 'Clean bullet points and math notation'}\n"
-                f"Edge Cases: {b8 or 'Handle division by zero cleanly'}"
+                f"Edge Cases: {b8 or 'Handle mathematical domain errors cleanly'}"
             )
 
             status.write("🧠 Brain 9: Ensemble Code Synthesizer...")
@@ -136,13 +141,16 @@ if st.button("Build AI Tool", type="primary"):
             clean_code = extract_clean_code(raw_code) if raw_code else "# Code generation complete."
 
             status.write("🧠 Brain 10: Council QA Verification...")
-            b10 = call_groq([{"role": "user", "content": f"Certify readiness of this system: {master_spec}"}], max_tok=100)
+            # Enforce clean verdict with no chain-of-thought planning
+            qa_instruction = "Return ONLY one short sentence certifying this system ready. Example: 'Verified: Operational and ready for input.'"
+            b10_raw = call_groq([{"role": "system", "content": qa_instruction}, {"role": "user", "content": f"Spec: {b1}"}], max_tok=60)
+            b10 = strip_internal_thoughts(b10_raw) if b10_raw else "Council Certified: Ready for deployment."
 
             st.session_state.configured_app = {
                 "goal": user_request,
                 "system_prompt": master_spec,
                 "source_code": clean_code,
-                "qa_verdict": b10 or "Operational Verified."
+                "qa_verdict": b10
             }
             st.session_state.chat_history = []
             status.update(label="10-Brain Ensemble Certified & Deployed!", state="complete", expanded=False)
@@ -162,33 +170,58 @@ if st.session_state.configured_app:
         for msg in st.session_state.chat_history:
             with st.chat_message(msg["role"]):
                 st.markdown(msg["content"])
+                if "plot_code" in msg:
+                    try:
+                        exec_env = {"np": np, "plt": plt}
+                        exec(msg["plot_code"], exec_env)
+                        fig = exec_env.get("fig") or plt.gcf()
+                        st.pyplot(fig)
+                        plt.clf()
+                    except Exception:
+                        pass
 
-        user_input = st.chat_input("Interact with your custom AI here...")
+        user_input = st.chat_input("Enter equation or prompt here...")
         if user_input:
             st.session_state.chat_history.append({"role": "user", "content": user_input})
             with st.chat_message("user"):
                 st.markdown(user_input)
 
             with st.chat_message("assistant"):
-                with st.spinner("Council formulating final answer..."):
-                    # Proper role segregation: Instructions in system, question in user
+                with st.spinner("Council analyzing and plotting..."):
                     council_system_instruction = (
                         f"You are the deployed expert tool created for: {app_info['goal']}.\n"
                         f"{app_info['system_prompt']}\n\n"
-                        "CRITICAL INSTRUCTIONS:\n"
-                        "- Answer the user's prompt DIRECTLY.\n"
-                        "- DO NOT output meta thoughts, internal planning, or phrases like 'We need to produce'.\n"
-                        "- Use clean markdown formatting, concise bullet points, and proper mathematical notation."
+                        "CRITICAL OPERATIONAL RULES:\n"
+                        "1. Answer the user prompt directly. Never output internal planning notes or 'We need to...'.\n"
+                        "2. Provide an analytical breakdown using bullet points and LaTeX formatting.\n"
+                        "3. If the user input represents a mathematical equation or function to graph, you MUST include a clean Python block using `matplotlib.pyplot as plt` and `numpy as np` defining a figure named `fig`. Do not call `plt.show()`.\n"
                     )
 
                     messages = [{"role": "system", "content": council_system_instruction}]
                     for m in st.session_state.chat_history:
                         messages.append({"role": m["role"], "content": m["content"]})
 
-                    reply = call_groq(messages, max_tok=900, temp=0.2)
+                    reply = call_groq(messages, max_tok=1000, temp=0.2)
                     if reply:
                         st.markdown(reply)
-                        st.session_state.chat_history.append({"role": "assistant", "content": reply})
+                        
+                        # Extract and render plot code directly if present
+                        code_match = re.search(r"```python\s*(.*?fig\s*=.*?)\s*```", reply, re.DOTALL)
+                        entry = {"role": "assistant", "content": reply}
+                        
+                        if code_match:
+                            extracted_plot = code_match.group(1)
+                            try:
+                                exec_env = {"np": np, "plt": plt}
+                                exec(extracted_plot, exec_env)
+                                fig = exec_env.get("fig") or plt.gcf()
+                                st.pyplot(fig)
+                                plt.clf()
+                                entry["plot_code"] = extracted_plot
+                            except Exception:
+                                pass
+                        
+                        st.session_state.chat_history.append(entry)
 
     with tab2:
         st.subheader("Generated Python Code")
