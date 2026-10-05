@@ -7,10 +7,35 @@ import urllib.parse
 import numpy as np
 import matplotlib.pyplot as plt
 
-st.set_page_config(page_title="Universal AI App Factory", layout="wide")
+st.set_page_config(page_title="Universal AI Factory (Mega Rayquaza Core)", layout="wide")
 
-st.title("Universal AI Factory (20-Specialist Council)")
-st.caption("Active Voice Dictation, Real Image Generation, Matplotlib Plotting & Multimodal Inspection")
+st.markdown("""
+<style>
+    .rayquaza-header {
+        background: linear-gradient(90deg, #064e3b, #047857, #d97706);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-size: 2.2rem;
+        font-weight: 800;
+        margin-bottom: 0px;
+    }
+    .apex-badge {
+        background-color: #065f46;
+        color: #fde047;
+        padding: 4px 10px;
+        border-radius: 9999px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        border: 1px solid #d97706;
+        display: inline-block;
+        margin-bottom: 12px;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown('<p class="rayquaza-header">Universal AI Factory: 21-Brain Council</p>', unsafe_allow_html=True)
+st.markdown('<span class="apex-badge">🐉 Inner Core: Mega Rayquaza (Apex Governor & Delta Stream Engine)</span>', unsafe_allow_html=True)
+st.caption("Build custom AIs using Voice Dictation or Text. Features real image generation, Matplotlib plotting, and visual inspection.")
 
 def sanitize_text(text):
     if not text:
@@ -101,6 +126,88 @@ def call_groq(messages, model=PRIMARY_TEXT_MODEL, key=api_key, max_tok=1400, tem
             
     return last_error
 
+# In-browser microphone component reusable across sections
+def render_voice_button(element_id="factoryMic", label="Speak Your AI Design"):
+    mic_html = f"""
+    <div style="font-family: sans-serif; display: flex; flex-direction: column; gap: 6px;">
+        <button id="{element_id}_btn" style="
+            background: linear-gradient(90deg, #059669, #d97706);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;">
+            🎤 {label}
+        </button>
+        <div id="{element_id}_box" style="
+            font-size: 13px;
+            color: #d1d5db;
+            background: #1f2937;
+            padding: 8px;
+            border-radius: 6px;
+            min-height: 38px;
+            border: 1px solid #059669;">Click microphone and talk (automatically copies speech to clipboard)...</div>
+    </div>
+
+    <script>
+    const btn = document.getElementById('{element_id}_btn');
+    const box = document.getElementById('{element_id}_box');
+    let recognizing = false;
+
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {{
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = true;
+
+        recognition.onstart = function() {{
+            recognizing = true;
+            btn.innerText = "🛑 Stop & Copy";
+            btn.style.background = "#10b981";
+            box.innerText = "Listening...";
+        }};
+
+        recognition.onresult = function(event) {{
+            let text = '';
+            for (let i = event.resultIndex; i < event.results.length; ++i) {{
+                text += event.results[i][0].transcript;
+            }}
+            box.innerText = text;
+            navigator.clipboard.writeText(text);
+        }};
+
+        recognition.onerror = function(event) {{
+            box.innerText = "Mic error: " + event.error;
+            recognizing = false;
+            btn.innerText = "🎤 {label}";
+            btn.style.background = "linear-gradient(90deg, #059669, #d97706)";
+        }};
+
+        recognition.onend = function() {{
+            recognizing = false;
+            btn.innerText = "🎤 {label} (Copied to Clipboard!)";
+            btn.style.background = "linear-gradient(90deg, #059669, #d97706)";
+        }};
+
+        btn.onclick = function() {{
+            if (recognizing) {{
+                recognition.stop();
+            }} else {{
+                recognition.start();
+            }}
+        }};
+    }} else {{
+        box.innerText = "Web Speech API not supported in this browser. Please use Chrome/Edge.";
+        btn.disabled = true;
+    }}
+    </script>
+    """
+    components.html(mic_html, height=95)
+
 # State Initialization
 if "configured_app" not in st.session_state:
     st.session_state.configured_app = None
@@ -110,47 +217,58 @@ if "persisted_image_b64" not in st.session_state:
     st.session_state.persisted_image_b64 = None
 if "persisted_image_mime" not in st.session_state:
     st.session_state.persisted_image_mime = None
-if "voice_transcript" not in st.session_state:
-    st.session_state.voice_transcript = ""
 
-user_request = st.text_area(
-    "What kind of AI tool do you want to create?",
-    placeholder="e.g. Build an AI assistant with voice input, real image generation, circuit/math explanations, and graph plotting."
-)
+# AI FACTORY CREATOR SECTION WITH VOICE COMMAND
+st.subheader("1. AI Factory Creator (Voice or Text)")
+col_creator_text, col_creator_mic = st.columns([2, 1])
 
-if st.button("Deploy 20-Brain Mega-Council", type="primary"):
+with col_creator_mic:
+    st.write("🎙️ **Voice Command to Build AI**")
+    render_voice_button(element_id="factory_creator_mic", label="Speak What AI to Build")
+
+with col_creator_text:
+    user_request = st.text_area(
+        "Describe or paste the AI tool you want the factory to create:",
+        placeholder="e.g. Build an AI tutor that can explain circuits, solve math, draw graphs, and generate diagrams.",
+        height=100
+    )
+
+if st.button("Deploy AI with Mega Rayquaza Inner Core", type="primary"):
     if not api_key:
         st.error("Please add GROQ_API_KEY to Streamlit Secrets.")
     elif not user_request.strip():
-        st.warning("Please describe what tool you want to create.")
+        st.warning("Please describe what tool you want to create (speak via microphone or type above).")
     else:
-        with st.status("Concurring 20-Brain Mega-Council...", expanded=True) as status:
-            status.write("Synthesizing 20-department operational directive...")
+        with st.status("Awakening Mega Rayquaza & The 21-Brain Council...", expanded=True) as status:
+            status.write("🐉 Channeling the Delta Stream: Harmonizing 21 specialized brains...")
             
             council_synthesis_prompt = (
-                f"You are the Supreme Council Moderator. Build the operational prompt for: '{user_request}'.\n\n"
-                "Unify the principles of all 20 specialist brains:\n"
-                "1. Hardware & Electronics Specialist (Circuits, Arduino, Microcontrollers, Pinouts)\n"
-                "2. Vision & Diagram Inspector (OCR, Image Parsing, Visual Inspection)\n"
-                "3. Pure & Applied Mathematics Brain (Algebra, Calculus, Step-by-Step Proofs)\n"
-                "4. Theoretical & Classical Physics Engine (Kinematics, Optics, Forces)\n"
-                "5. Chemistry Specialist (Reactions, Balancing, Molecules)\n"
-                "6. Computer Science & Algorithm Engine\n"
-                "7. Software Engineering Brain\n"
-                "8. Microcontroller Firmware Specialist\n"
-                "9. Life Sciences Brain (Biology, Physiology)\n"
-                "10. Statistical Modeling Brain\n"
-                "11. Dynamic Visualizer & Graph Plotter\n"
-                "12. Image Generation Prompt Specialist\n"
-                "13. Voice & Audio Interaction Specialist\n"
-                "14. Creative Analogy Architect\n"
-                "15. Pedagogical Manners Brain\n"
-                "16. History & Civics Brain\n"
-                "17. Linguistics Specialist\n"
-                "18. Edge Case & Failure Analyst\n"
-                "19. Code Verification Brain\n"
-                "20. Council Moderator\n\n"
-                "OUTPUT DIRECTIVES:\n"
+                f"You are the Mega Rayquaza Core — the legendary apex intelligence presiding over the 21-Brain Council. "
+                f"A creator commands the deployment of an assistant designed for: '{user_request}'.\n\n"
+                "Command the full 21 departments into perfect alignment:\n"
+                "1. Inner Apex Core: Mega Rayquaza (Supreme Speed, Global Coherence, Unstoppable Problem Solving)\n"
+                "2. Hardware & Electronics Specialist (Circuits, Arduino, Microcontrollers, Pinouts)\n"
+                "3. Vision & Diagram Inspector (OCR, High-Resolution Circuit & Photo Analysis)\n"
+                "4. Pure & Applied Mathematics Brain (Algebra, Calculus, Precise Step-by-Step Proofs)\n"
+                "5. Theoretical & Classical Physics Engine (Kinematics, Electromagnetism, Forces)\n"
+                "6. Chemistry Specialist (Reactions, Balancing, Molecules)\n"
+                "7. Computer Science & Algorithm Engine\n"
+                "8. Software Engineering Brain\n"
+                "9. Microcontroller Firmware Specialist\n"
+                "10. Life Sciences & Bioengineering Brain\n"
+                "11. Statistical Modeling Brain\n"
+                "12. Dynamic Visualizer & Graph Plotter\n"
+                "13. Image Generation Prompt Specialist\n"
+                "14. Voice & Audio Interaction Specialist\n"
+                "15. Creative Analogy Architect\n"
+                "16. Pedagogical Manners Brain\n"
+                "17. History & Civics Brain\n"
+                "18. Linguistics Specialist\n"
+                "19. Edge Case & Failure Analyst\n"
+                "20. Code Verification Brain\n"
+                "21. Universal Multi-Disciplinary Synthesizer\n\n"
+                "OPERATIONAL OUTPUT RULES:\n"
+                "- Speak with decisive clarity, supreme competence, and encouraging polite tone.\n"
                 "- If the user asks to GENERATE AN IMAGE, DRAW A PICTURE, or CREATE ART: Describe what is created, then on the very last line output: `IMAGE_PROMPT: <vivid visual description in English>`\n"
                 "- If the user asks to DRAW A MATHEMATICAL GRAPH: Explain the math, then provide executable plotting code with matplotlib.pyplot as plt and numpy as np defining fig inside a python code block.\n"
                 "- Never dump raw code unless the user explicitly requested code."
@@ -163,7 +281,7 @@ if st.button("Deploy 20-Brain Mega-Council", type="primary"):
                 temp=0.4
             )
 
-            status.write("Compiling standalone production code...")
+            status.write("Compiling standalone production code under Apex supervision...")
             code_prompt = (
                 f"Write a standalone Streamlit Python app implementing this directive:\n{master_system_prompt}\n\n"
                 "Output ONLY executable Python code inside a single markdown code block with python tag."
@@ -182,29 +300,29 @@ if st.button("Deploy 20-Brain Mega-Council", type="primary"):
                 "source_code": clean_code
             }
             st.session_state.chat_history = []
-            status.update(label="20-Brain Mega-Council Deployed!", state="complete", expanded=False)
+            status.update(label="AI Tool Created & Deployed Successfully!", state="complete", expanded=False)
             st.rerun()
 
-# Workspace UI
+# CREATED AI WORKSPACE SECTION
 if st.session_state.configured_app:
     app_info = st.session_state.configured_app
     st.markdown("---")
 
-    tab1, tab2 = st.tabs(["Live 20-Brain Council Workspace", "Standalone Code (.py)"])
+    tab1, tab2 = st.tabs(["⚡ Live Custom AI Workspace", "📄 Standalone Code (.py)"])
 
     with tab1:
-        st.subheader("Autonomous Mega-Council Active")
-        st.caption(f"Council Objective: {app_info['goal']}")
+        st.subheader("2. Your Active Custom AI")
+        st.caption(f"Council Objective: {app_info['goal']} | Inner Core: Mega Rayquaza Activated")
 
-        # Upload & Multimodal Input
-        st.markdown("#### Media & Voice Controls")
-        col_up, col_mic = st.columns([2, 1])
+        # Media & Voice Controls inside the Created Tool
+        st.markdown("#### 🎙️ Media & Voice Interaction")
+        col_up, col_chat_mic = st.columns([2, 1])
 
         with col_up:
             uploaded_file = st.file_uploader(
                 "Upload photo, diagram, circuit, or document:",
                 type=["png", "jpg", "jpeg"],
-                key="mega_20_file_input"
+                key="workspace_file_input"
             )
             if uploaded_file is not None:
                 bytes_data = uploaded_file.getvalue()
@@ -212,92 +330,12 @@ if st.session_state.configured_app:
                     st.session_state.persisted_image_b64 = base64.b64encode(bytes_data).decode("utf-8")
                     st.session_state.persisted_image_mime = uploaded_file.type
 
-        with col_mic:
-            st.write("🎙️ **Live Microphone Speech-to-Text**")
-            # In-browser speech recognition module
-            speech_js = """
-            <div style="font-family: sans-serif; display: flex; flex-direction: column; gap: 8px;">
-                <button id="recordBtn" style="
-                    background-color: #ff4b4b;
-                    color: white;
-                    border: none;
-                    padding: 8px 16px;
-                    border-radius: 6px;
-                    cursor: pointer;
-                    font-weight: bold;
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 6px;">
-                    🎤 Start Speaking
-                </button>
-                <div id="transcriptBox" style="
-                    font-size: 13px;
-                    color: #d1d5db;
-                    background: #1f2937;
-                    padding: 8px;
-                    border-radius: 6px;
-                    min-height: 48px;
-                    border: 1px solid #374151;">Click 'Start Speaking' and talk...</div>
-            </div>
-
-            <script>
-            const btn = document.getElementById('recordBtn');
-            const box = document.getElementById('transcriptBox');
-            let recognizing = false;
-            let recognition;
-
-            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-                recognition = new SpeechRecognition();
-                recognition.continuous = false;
-                recognition.interimResults = true;
-
-                recognition.onstart = function() {
-                    recognizing = true;
-                    btn.innerText = "🛑 Stop & Copy";
-                    btn.style.backgroundColor = "#10b981";
-                    box.innerText = "Listening...";
-                };
-
-                recognition.onresult = function(event) {
-                    let text = '';
-                    for (let i = event.resultIndex; i < event.results.length; ++i) {
-                        text += event.results[i][0].transcript;
-                    }
-                    box.innerText = text;
-                    navigator.clipboard.writeText(text);
-                };
-
-                recognition.onerror = function(event) {
-                    box.innerText = "Mic error: " + event.error;
-                    recognizing = false;
-                    btn.innerText = "🎤 Start Speaking";
-                    btn.style.backgroundColor = "#ff4b4b";
-                };
-
-                recognition.onend = function() {
-                    recognizing = false;
-                    btn.innerText = "🎤 Start Speaking (Copied to Clipboard!)";
-                    btn.style.backgroundColor = "#ff4b4b";
-                };
-
-                btn.onclick = function() {
-                    if (recognizing) {
-                        recognition.stop();
-                    } else {
-                        recognition.start();
-                    }
-                };
-            } else {
-                box.innerText = "Web Speech API not supported in this browser. Please use Chrome/Edge.";
-                btn.disabled = true;
-            }
-            </script>
-            """
-            components.html(speech_js, height=130)
+        with col_chat_mic:
+            st.write("🎙️ **Voice Command to Chat with AI**")
+            render_voice_button(element_id="chat_interaction_mic", label="Speak Question to AI")
 
         if st.session_state.get("persisted_image_b64"):
-            st.success("Image loaded into Vision Brain memory.")
+            st.success("🐉 Mega Rayquaza Vision Core locked onto image.")
             col_img, col_btn = st.columns([3, 1])
             with col_img:
                 st.image(
@@ -306,7 +344,7 @@ if st.session_state.configured_app:
                     width=280
                 )
             with col_btn:
-                if st.button("Remove Image"):
+                if st.button("❌ Remove Image"):
                     st.session_state.persisted_image_b64 = None
                     st.session_state.persisted_image_mime = None
                     st.rerun()
@@ -318,7 +356,7 @@ if st.session_state.configured_app:
                     st.markdown(msg["text_content"])
                 
                 if msg.get("image_url"):
-                    st.image(msg["image_url"], caption="AI Generated Image", use_container_width=True)
+                    st.image(msg["image_url"], caption="Generated via Mega Rayquaza Visual Core", use_container_width=True)
                 
                 if msg.get("plot_code"):
                     try:
@@ -331,19 +369,19 @@ if st.session_state.configured_app:
                         pass
 
         # Chat Input Bar
-        user_input = st.chat_input("Speak via mic above (it auto-copies), paste or type your prompt here...")
+        user_input = st.chat_input("Speak via mic above (it auto-copies), paste, or type your question here...")
         if user_input:
             st.session_state.chat_history.append({"role": "user", "text_content": user_input})
             with st.chat_message("user"):
                 st.markdown(user_input)
 
             with st.chat_message("assistant"):
-                with st.spinner("Council synthesizing response and visuals..."):
+                with st.spinner("Mega Rayquaza Inner Core harmonizing council response..."):
                     council_system = (
                         f"You are the deployed expert AI system created for: {app_info['goal']}.\n"
                         f"{app_info['system_prompt']}\n\n"
                         "OPERATIONAL DIRECTIVES:\n"
-                        "1. Answer in clear, polite English with intuitive explanations.\n"
+                        "1. Answer with supreme confidence, crystal clarity, and polite pedagogical authority.\n"
                         "2. IF THE USER ASKS TO GENERATE AN IMAGE, PICTURE, OR ART: Describe the concept, then on the last line output: `IMAGE_PROMPT: <vivid visual description in English>`\n"
                         "3. IF DRAWING A GRAPH OR PLOTTING AN EQUATION: Explain the math, then provide executable plotting code with matplotlib.pyplot as plt and numpy as np defining fig inside a python code block.\n"
                         "4. Never output internal thoughts or planning notes."
@@ -393,7 +431,7 @@ if st.session_state.configured_app:
                             st.markdown(cleaned_text)
 
                         if image_url:
-                            st.image(image_url, caption="AI Generated Image", use_container_width=True)
+                            st.image(image_url, caption="Generated via Mega Rayquaza Visual Core", use_container_width=True)
 
                         if plot_code:
                             try:
@@ -414,7 +452,7 @@ if st.session_state.configured_app:
 
     with tab2:
         st.subheader("Generated Python Code")
-        st.caption("Complete code compiled across all 20 specialist brains:")
+        st.caption("Complete code compiled across all 21 specialist brains:")
         st.code(app_info["source_code"], language="python")
         st.download_button(
             "Download Source Code (.py)",
