@@ -4,13 +4,12 @@ import re
 import base64
 import numpy as np
 import matplotlib.pyplot as plt
-import io
 from concurrent.futures import ThreadPoolExecutor
 
 st.set_page_config(page_title="Universal AI App Factory", layout="wide")
 
 st.title("Universal AI App Factory")
-st.caption("Universal Multi-Brain Architecture: Autonomous Task Execution Engine")
+st.caption("Autonomous Multi-Brain Council with Persistent Vision & Tool Execution")
 
 def sanitize_text(text):
     if not text:
@@ -87,39 +86,44 @@ def call_groq(messages, model=TEXT_MODEL, key=api_key, max_tok=1000, temp=0.2):
     except Exception:
         return None
 
+# Session State Initialization
 if "configured_app" not in st.session_state:
     st.session_state.configured_app = None
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
+if "persisted_image" not in st.session_state:
+    st.session_state.persisted_image = None
+if "persisted_mime" not in st.session_state:
+    st.session_state.persisted_mime = None
 
 user_request = st.text_area(
     "What kind of tool or assistant do you want to build?",
-    placeholder="Describe ANY task: coding tutor, universal image translator, physics visualizer, financial modeler, essay evaluator..."
+    placeholder="Describe ANY task: math tutor that reads photos, coding assistant, data visualizer..."
 )
 
 if st.button("Build Autonomous AI Tool", type="primary"):
     if not api_key:
         st.error("Please add GROQ_API_KEY to Streamlit Secrets.")
     elif not user_request.strip():
-        st.warning("Please describe the tool or task you want to build.")
+        st.warning("Please describe the tool you want to build.")
     else:
         with st.status("Council Activating 10 Brains across all domains...", expanded=True) as status:
-            status.write("🧠 Brain 1 & 2: General Intent Deconstruction & Boundary Analysis...")
-            b1 = call_groq([{"role": "user", "content": f"Deconstruct the complete functional scope and deliverables for this open-ended task: '{user_request}'. Be precise."}], max_tok=200)
-            b2 = call_groq([{"role": "user", "content": f"List the primary failure states, domain limitations, and fallback handling for: {b1}."}], max_tok=200)
+            status.write("🧠 Brain 1 & 2: Goal Deconstruction & Boundary Analysis...")
+            b1 = call_groq([{"role": "user", "content": f"Deconstruct the complete functional scope for: '{user_request}'. Be brief."}], max_tok=180)
+            b2 = call_groq([{"role": "user", "content": f"List 2 failure modes and constraints for: {b1}."}], max_tok=180)
 
-            status.write("🧠 Brain 3, 4 & 5: System Identity, Logic Protocol & Output Guardrails...")
-            b3 = call_groq([{"role": "user", "content": f"Define the master expert authority and behavioral protocol for: {b1}."}], max_tok=250)
-            b4 = call_groq([{"role": "user", "content": f"Formulate the universal problem-solving reasoning algorithm for: {b3}."}], max_tok=250)
-            b5 = call_groq([{"role": "user", "content": f"Define strict presentation standards (structured formatting, data visualizations, clean technical prose) for: {b4}."}], max_tok=200)
+            status.write("🧠 Brain 3, 4 & 5: System Identity, Reasoning & Formatting Guardrails...")
+            b3 = call_groq([{"role": "user", "content": f"Define the master expert authority and persona for: {b1}."}], max_tok=220)
+            b4 = call_groq([{"role": "user", "content": f"Formulate the step-by-step problem-solving reasoning algorithm for: {b3}."}], max_tok=220)
+            b5 = call_groq([{"role": "user", "content": f"Define formatting standards (bullets, clean math notation, zero meta-filler) for: {b4}."}], max_tok=180)
 
             status.write("🧠 Brains 6, 7 & 8: UI Architecture, Computational Backends & Resilience...")
             def run_b6():
-                return call_groq([{"role": "user", "content": f"Plan optimal interactive UI layouts and input mechanisms for: {b1}"}], max_tok=200)
+                return call_groq([{"role": "user", "content": f"Plan interactive UI layouts for: {b1}"}], max_tok=180)
             def run_b7():
-                return call_groq([{"role": "user", "content": f"Identify necessary computational modules, libraries, and execution logic for: {b1}"}], max_tok=200)
+                return call_groq([{"role": "user", "content": f"Identify necessary computational modules for: {b1}"}], max_tok=180)
             def run_b8():
-                return call_groq([{"role": "user", "content": f"Formulate error handling, input validation, and recovery protocols for: {b2}"}], max_tok=200)
+                return call_groq([{"role": "user", "content": f"Formulate error handling and validation for: {b2}"}], max_tok=180)
 
             with ThreadPoolExecutor(max_workers=3) as executor:
                 f6 = executor.submit(run_b6)
@@ -130,20 +134,16 @@ if st.button("Build Autonomous AI Tool", type="primary"):
             master_spec = (
                 f"### SYSTEM OBJECTIVE\n{b1 or user_request}\n\n"
                 f"### EXPERT IDENTITY\n{b3}\n\n"
-                f"### REASONING & EXECUTION PROTOCOL\n{b4}\n\n"
-                f"### FORMATTING & STANDARDS\n{b5}\n\n"
-                f"### TECHNICAL CAPABILITIES & WORKFLOW\n{b6}\n{b7}\n\n"
-                f"### RESILIENCE & ERROR HANDLING\n{b8}"
+                f"### REASONING PROTOCOL\n{b4}\n\n"
+                f"### FORMATTING STANDARDS\n{b5}\n\n"
+                f"### TECHNICAL WORKFLOW\n{b6}\n{b7}\n\n"
+                f"### RESILIENCE\n{b8}"
             )
 
-            status.write("🧠 Brain 9: Full Standalone Application Synthesis...")
+            status.write("🧠 Brain 9: Standalone Python Package Synthesis...")
             code_prompt = (
-                f"Generate a complete, fully functional standalone Python Streamlit application tailored to this exact purpose:\n{master_spec}\n\n"
-                "CRITICAL REQUIREMENTS:\n"
-                "- Must run completely independently.\n"
-                "- Include all required library imports.\n"
-                "- Implement complete UI and operational handling with no missing sections or placeholders.\n"
-                "- Output ONLY valid Python code enclosed in a single ```python ``` block."
+                f"Generate a complete, fully functional standalone Python Streamlit application tailored to:\n{master_spec}\n\n"
+                "CRITICAL: Output ONLY valid Python code inside a single ```python ``` block without conversational filler."
             )
             raw_code = call_groq([{"role": "user", "content": code_prompt}], max_tok=1800, temp=0.1)
             clean_code = extract_clean_code(raw_code) if raw_code else "# Code generation complete."
@@ -161,7 +161,7 @@ if st.button("Build Autonomous AI Tool", type="primary"):
             status.update(label="Universal Custom AI Deployed!", state="complete", expanded=False)
             st.rerun()
 
-# Dynamic Workspace UI
+# Workspace
 if st.session_state.configured_app:
     app_info = st.session_state.configured_app
     st.markdown("---")
@@ -172,33 +172,33 @@ if st.session_state.configured_app:
         st.subheader("Autonomous AI Active")
         st.caption(f"Status: {app_info['qa_verdict']} | Objective: {app_info['goal']}")
 
-        # Universal multimodal input tray available for any tool
-        with st.expander("📎 Optional Multimodal Input (Upload photos, documents, or data)", expanded=False):
-            uploaded_file = st.file_uploader(
-                "Attach an image, text file, or data document (optional):",
-                type=["png", "jpg", "jpeg", "txt", "csv", "py", "md"],
-                key="universal_uploader"
-            )
-            file_context = ""
-            is_image = False
-            b64_image = None
-            mime_type = ""
+        # Prominent Multimodal Section
+        st.markdown("#### 📷 Image & Document Input")
+        uploaded_file = st.file_uploader(
+            "Upload an image or document (persists for the whole session):",
+            type=["png", "jpg", "jpeg"],
+            key="file_uploader_widget"
+        )
+        if uploaded_file is not None:
+            bytes_data = uploaded_file.getvalue()
+            st.session_state.persisted_image = base64.b64encode(bytes_data).decode("utf-8")
+            st.session_state.persisted_mime = uploaded_file.type
 
-            if uploaded_file is not None:
-                if uploaded_file.type.startswith("image"):
-                    is_image = True
-                    mime_type = uploaded_file.type
-                    bytes_data = uploaded_file.getvalue()
-                    b64_image = base64.b64encode(bytes_data).decode("utf-8")
-                    st.image(uploaded_file, caption="Attached Image Preview", width=300)
-                else:
-                    try:
-                        file_context = uploaded_file.getvalue().decode("utf-8", errors="ignore")
-                        st.info(f"Loaded file content: {uploaded_file.name} ({len(file_context)} chars)")
-                    except Exception:
-                        st.warning("Could not read uploaded text content.")
+        if st.session_state.persisted_image:
+            col_img, col_btn = st.columns([3, 1])
+            with col_img:
+                st.image(
+                    base64.b64decode(st.session_state.persisted_image),
+                    caption="Active Attached Image (AI can see this)",
+                    width=280
+                )
+            with col_btn:
+                if st.button("❌ Remove Image"):
+                    st.session_state.persisted_image = None
+                    st.session_state.persisted_mime = None
+                    st.rerun()
 
-        # Render Chat & Executable Visuals
+        # Render Chat History
         for msg in st.session_state.chat_history:
             with st.chat_message(msg["role"]):
                 st.markdown(msg["content"])
@@ -212,7 +212,7 @@ if st.session_state.configured_app:
                     except Exception:
                         pass
 
-        user_input = st.chat_input("Enter any command, question, equation, or request...")
+        user_input = st.chat_input("Ask a question, request an explanation, or inspect your uploaded photo...")
         if user_input:
             st.session_state.chat_history.append({"role": "user", "content": user_input})
             with st.chat_message("user"):
@@ -224,17 +224,22 @@ if st.session_state.configured_app:
                         f"You are the deployed expert AI tool designed for: {app_info['goal']}.\n"
                         f"{app_info['system_prompt']}\n\n"
                         "OPERATING DIRECTIVES:\n"
-                        "1. Fulfill the user's request thoroughly, directly, and accurately.\n"
-                        "2. Never print internal chain-of-thought or meta-planning phrases.\n"
-                        "3. Use structured markdown formatting (headings, bullet points, clean formulas, code blocks).\n"
-                        "4. If the task involves rendering graphs or visualizations, provide executable Python code using `matplotlib.pyplot as plt` and define `fig`. Avoid calling `plt.show()`.\n"
+                        "1. Fulfill the user's request directly, step-by-step, and accurately.\n"
+                        "2. Never print internal thinking, scratchpads, or 'We need to' notes.\n"
+                        "3. When an image is provided, carefully inspect and describe everything visible in it.\n"
+                        "4. If generating visual graphs, provide executable Python code using `matplotlib.pyplot as plt` and define `fig`.\n"
                     )
 
-                    # Multimodal routing
-                    if is_image and b64_image:
+                    # Route to Vision Model if an image is attached
+                    if st.session_state.persisted_image:
                         user_content = [
-                            {"type": "text", "text": user_input or "Analyze the attached image and address the objective."},
-                            {"type": "image_url", "image_url": {"url": f"data:{mime_type};base64,{b64_image}"}}
+                            {"type": "text", "text": user_input},
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:{st.session_state.persisted_mime};base64,{st.session_state.persisted_image}"
+                                }
+                            }
                         ]
                         messages = [
                             {"role": "system", "content": council_system},
@@ -242,24 +247,18 @@ if st.session_state.configured_app:
                         ]
                         reply = call_groq(messages, model=VISION_MODEL, max_tok=1000, temp=0.2)
                     else:
-                        text_payload = user_input
-                        if file_context:
-                            text_payload = f"File Content:\n```\n{file_context[:3000]}\n```\n\nUser Request: {user_input}"
-
                         messages = [{"role": "system", "content": council_system}]
-                        for m in st.session_state.chat_history[:-1]:
+                        for m in st.session_state.chat_history:
                             messages.append({"role": m["role"], "content": m["content"]})
-                        messages.append({"role": "user", "content": text_payload})
-
-                        reply = call_groq(messages, model=TEXT_MODEL, max_tok=1200, temp=0.2)
+                        reply = call_groq(messages, model=TEXT_MODEL, max_tok=1000, temp=0.2)
 
                     if reply:
                         st.markdown(reply)
-                        
-                        # Dynamically execute code-driven plots if the response contains visual code
+
+                        # Code plotting check
                         code_match = re.search(r"```python\s*(.*?fig\s*=.*?)\s*```", reply, re.DOTALL)
                         entry = {"role": "assistant", "content": reply}
-                        
+
                         if code_match:
                             extracted_plot = code_match.group(1)
                             try:
