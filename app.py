@@ -2,13 +2,14 @@ import streamlit as st
 import requests
 import re
 import base64
+import urllib.parse
 import numpy as np
 import matplotlib.pyplot as plt
 
 st.set_page_config(page_title="20-Brain Mega-Council Factory", layout="wide")
 
 st.title("Universal AI Factory (20-Specialist Council)")
-st.caption("Active Graph Rendering and Vector Diagram Generation")
+st.caption("Active Image Generation, Matplotlib Plotting & Multimodal Hardware Inspection")
 
 def sanitize_text(text):
     if not text:
@@ -111,7 +112,7 @@ if "persisted_image_mime" not in st.session_state:
 
 user_request = st.text_area(
     "What kind of AI tool do you want to create?",
-    placeholder="e.g. Build an AI that can draw mathematical graphs, render diagrams, inspect hardware photos, and explain concepts simply."
+    placeholder="e.g. Build an AI that can generate real images, draw mathematical graphs, inspect hardware photos, and explain concepts clearly."
 )
 
 if st.button("Deploy 20-Brain Mega-Council", type="primary"):
@@ -125,31 +126,31 @@ if st.button("Deploy 20-Brain Mega-Council", type="primary"):
             
             council_synthesis_prompt = (
                 f"You are the Supreme Council Moderator. Build the operational prompt for: '{user_request}'.\n\n"
-                "Incorporate all 20 domains:\n"
-                "1. Hardware & Electronics Specialist\n"
-                "2. Vision & Diagram Inspector\n"
-                "3. Pure & Applied Mathematics Brain\n"
-                "4. Theoretical & Classical Physics Engine\n"
-                "5. Chemistry Specialist\n"
+                "Unify the principles of all 20 specialist brains:\n"
+                "1. Hardware & Electronics Specialist (Circuits, Microcontrollers, Pinouts)\n"
+                "2. Vision & Diagram Inspector (OCR, Image Parsing, Visual Inspection)\n"
+                "3. Pure & Applied Mathematics Brain (Algebra, Calculus, Step-by-Step Proofs)\n"
+                "4. Theoretical & Classical Physics Engine (Kinematics, Optics, Forces)\n"
+                "5. Chemistry Specialist (Reactions, Balancing, Molecules)\n"
                 "6. Computer Science & Algorithm Engine\n"
                 "7. Software Engineering Brain\n"
                 "8. Microcontroller Firmware Specialist\n"
-                "9. Life Sciences Brain\n"
+                "9. Life Sciences Brain (Biology, Physiology)\n"
                 "10. Statistical Modeling Brain\n"
                 "11. Dynamic Visualizer & Graph Plotter\n"
-                "12. Creative Analogy Architect\n"
-                "13. Pedagogical Manners Brain\n"
-                "14. History & Civics Brain\n"
-                "15. Linguistics Specialist\n"
-                "16. Edge Case & Failure Analyst\n"
-                "17. Code Verification Brain\n"
-                "18. Visual Renderer Engine (SVG & Matplotlib)\n"
+                "12. Image Generation Prompt Specialist\n"
+                "13. Creative Analogy Architect\n"
+                "14. Pedagogical Manners Brain\n"
+                "15. History & Civics Brain\n"
+                "16. Linguistics Specialist\n"
+                "17. Edge Case & Failure Analyst\n"
+                "18. Code Verification Brain\n"
                 "19. Universal Cross-Disciplinary Tutor\n"
                 "20. Council Moderator\n\n"
-                "OUTPUT RULES:\n"
-                "- If the user asks to DRAW, PLOT, or GRAPH an equation: explain the equation first, then supply a Python code block with plt.figure() and plt.plot() defining fig at the end.\n"
-                "- If the user asks to GENERATE AN IMAGE, DIAGRAM, or ILLUSTRATION: output a valid SVG XML code block enclosed in triple backticks with xml tag.\n"
-                "- Do not show raw code explanations unless code was explicitly requested."
+                "OUTPUT DIRECTIVES:\n"
+                "- If the user asks to GENERATE AN IMAGE, DRAW A PICTURE, or CREATE ART: Describe what is created, then output a single line with `IMAGE_PROMPT: <descriptive prompt for diffusion model>`.\n"
+                "- If the user asks to DRAW A MATHEMATICAL GRAPH: Explain the math, then provide executable plotting code using matplotlib.pyplot as plt and numpy as np defining fig inside a python code block.\n"
+                "- Never dump raw code unless the user explicitly requested code."
             )
             
             master_system_prompt = call_groq(
@@ -220,15 +221,17 @@ if st.session_state.configured_app:
                     st.session_state.persisted_image_mime = None
                     st.rerun()
 
-        # Render conversation history with graphs & SVG diagrams
+        # Render conversation history with images, graphs & text
         for msg in st.session_state.chat_history:
             with st.chat_message(msg["role"]):
                 if msg.get("text_content"):
                     st.markdown(msg["text_content"])
                 
-                if msg.get("svg_content"):
-                    st.markdown(msg["svg_content"], unsafe_allow_html=True)
+                # Render Generated Diffusion Image
+                if msg.get("image_url"):
+                    st.image(msg["image_url"], caption="AI Generated Image", use_container_width=True)
                 
+                # Render Matplotlib Graph
                 if msg.get("plot_code"):
                     try:
                         exec_env = {"np": np, "plt": plt}
@@ -239,21 +242,21 @@ if st.session_state.configured_app:
                     except Exception:
                         pass
 
-        user_input = st.chat_input("Ask a question, request a graph (e.g. plot y^2=4ax), or ask for a diagram...")
+        user_input = st.chat_input("Ask a question, generate an image (e.g. 'generate an image of a galaxy'), or plot a graph...")
         if user_input:
             st.session_state.chat_history.append({"role": "user", "text_content": user_input})
             with st.chat_message("user"):
                 st.markdown(user_input)
 
             with st.chat_message("assistant"):
-                with st.spinner("Council analyzing and generating visual output..."):
+                with st.spinner("Council synthesizing response and visuals..."):
                     council_system = (
                         f"You are the deployed expert AI system created for: {app_info['goal']}.\n"
                         f"{app_info['system_prompt']}\n\n"
                         "OPERATIONAL DIRECTIVES:\n"
                         "1. Answer in clear, polite English with intuitive explanations.\n"
-                        "2. IF DRAWING A GRAPH OR EQUATION: Provide the mathematical explanation first. At the end, provide executable plotting code with matplotlib.pyplot as plt and numpy as np defining fig inside a python code block.\n"
-                        "3. IF GENERATING A DIAGRAM OR IMAGE: Output an inline SVG XML representation inside an xml code block so it renders on screen.\n"
+                        "2. IF THE USER ASKS TO GENERATE AN IMAGE, PICTURE, OR ART: Describe the concept, then on the last line output: `IMAGE_PROMPT: <vivid visual description in English>`\n"
+                        "3. IF DRAWING A GRAPH OR PLOTTING AN EQUATION: Explain the math, then provide executable plotting code with matplotlib.pyplot as plt and numpy as np defining fig inside a python code block.\n"
                         "4. Never output internal thoughts or planning notes."
                     )
 
@@ -283,21 +286,31 @@ if st.session_state.configured_app:
                         reply = call_groq(messages, model=PRIMARY_TEXT_MODEL, max_tok=1400, temp=0.4)
 
                     if reply:
-                        svg_match = re.search(r"```xml\s*(<svg.*?</svg>)\s*```", reply, re.DOTALL | re.IGNORECASE)
-                        svg_code = svg_match.group(1) if svg_match else None
+                        # Check for Image Generation prompt tag
+                        image_url = None
+                        img_prompt_match = re.search(r"IMAGE_PROMPT:\s*(.+)", reply, re.IGNORECASE)
+                        if img_prompt_match:
+                            raw_prompt = img_prompt_match.group(1).strip()
+                            clean_prompt = re.sub(r"[^\w\s,.-]", "", raw_prompt)
+                            encoded_prompt = urllib.parse.quote(clean_prompt[:250])
+                            image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=768&height=512&nologo=true"
 
+                        # Check for Python Plotting code
                         plot_match = re.search(r"```(?:python)?\s*(.*?fig\s*=.*?)\s*```", reply, re.DOTALL)
                         plot_code = plot_match.group(1) if plot_match else None
 
-                        cleaned_text = re.sub(r"```xml\s*<svg.*?</svg>\s*```", "", reply, flags=re.DOTALL | re.IGNORECASE)
+                        # Clean conversational text
+                        cleaned_text = re.sub(r"IMAGE_PROMPT:\s*.+", "", reply, flags=re.IGNORECASE)
                         cleaned_text = re.sub(r"```(?:python)?\s*.*?fig\s*=.*?\s*```", "", cleaned_text, flags=re.DOTALL).strip()
 
                         if cleaned_text:
                             st.markdown(cleaned_text)
 
-                        if svg_code:
-                            st.markdown(svg_code, unsafe_allow_html=True)
+                        # Display Real Generated Image
+                        if image_url:
+                            st.image(image_url, caption="AI Generated Image", use_container_width=True)
 
+                        # Display Rendered Matplotlib Graph
                         if plot_code:
                             try:
                                 exec_env = {"np": np, "plt": plt}
@@ -311,7 +324,7 @@ if st.session_state.configured_app:
                         st.session_state.chat_history.append({
                             "role": "assistant",
                             "text_content": cleaned_text,
-                            "svg_content": svg_code,
+                            "image_url": image_url,
                             "plot_code": plot_code
                         })
 
