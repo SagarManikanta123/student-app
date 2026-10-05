@@ -6,10 +6,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from concurrent.futures import ThreadPoolExecutor
 
-st.set_page_config(page_title="Domain-Specialist AI Factory", layout="wide")
+st.set_page_config(page_title="Creative Multi-Brain AI Factory", layout="wide")
 
-st.title("Domain-Specialist AI Factory")
-st.caption("12-Brain Council: Vision, Voice, Math, Physics, Chemistry, Coding, Biology, History, Literature, Graphing, Universal Tutor & Council Synthesizer")
+st.title("Creative Multi-Brain AI Factory")
+st.caption("14-Specialist Council: Vision, Creative Analogies, Manners/Tone, STEM, Humanities, Graphing & Master Synthesis")
 
 def sanitize_text(text):
     if not text:
@@ -58,7 +58,7 @@ if not api_key:
 TEXT_MODEL = "openai/gpt-oss-20b"
 VISION_MODEL = "llama-3.2-90b-vision-preview"
 
-def call_groq(messages, model=TEXT_MODEL, key=api_key, max_tok=1000, temp=0.2):
+def call_groq(messages, model=TEXT_MODEL, key=api_key, max_tok=1000, temp=0.6):
     clean_k = sanitize_text(key)
     headers = {
         "Authorization": f"Bearer {clean_k}",
@@ -104,73 +104,81 @@ if "persisted_image_mime" not in st.session_state:
 
 user_request = st.text_area(
     "What kind of AI tool do you want to create?",
-    placeholder="e.g. An AI tutor that can explain physics and math problems from uploaded photos, draw graphs, and explain every study topic simply"
+    placeholder="e.g. Build an AI that understands photos, solves math and physics, creates graphs, and explains everything with creative analogies in a friendly tone"
 )
 
-if st.button("Build Domain-Specialist AI", type="primary"):
+if st.button("Build Multi-Brain AI", type="primary"):
     if not api_key:
         st.error("Please add GROQ_API_KEY to Streamlit Secrets.")
     elif not user_request.strip():
         st.warning("Please describe what tool you want to create.")
     else:
-        with st.status("Council Activating 12 Domain Specialist Brains...", expanded=True) as status:
+        with st.status("Council Activating 14 Specialized Brains...", expanded=True) as status:
             req_lower = user_request.lower()
 
-            active_specialists = []
-            if any(w in req_lower for w in ["photo", "image", "picture", "scan", "document", "pdf", "video", "see"]):
-                active_specialists.append("Vision & Media Specialist (Brain 1)")
-            if any(w in req_lower for w in ["voice", "speak", "audio", "talk", "listen"]):
-                active_specialists.append("Audio & Voice Specialist (Brain 2)")
-            if any(w in req_lower for w in ["math", "sum", "equation", "calculus", "algebra", "integral"]):
-                active_specialists.append("Mathematics Specialist (Brain 3)")
-            if any(w in req_lower for w in ["physics", "force", "motion", "gravity", "energy", "mechanics"]):
-                active_specialists.append("Physics Specialist (Brain 4)")
-            if any(w in req_lower for w in ["chemistry", "reaction", "compound", "molecule", "element"]):
-                active_specialists.append("Chemistry Specialist (Brain 5)")
-            if any(w in req_lower for w in ["code", "coding", "program", "python", "developer", "bug"]):
-                active_specialists.append("Computer Science & Code Specialist (Brain 6)")
-            if any(w in req_lower for w in ["biology", "cell", "dna", "organ", "plant", "animal", "life"]):
-                active_specialists.append("Biology & Life Sciences Specialist (Brain 7)")
-            if any(w in req_lower for w in ["history", "war", "civics", "government", "social"]):
-                active_specialists.append("History & Social Studies Specialist (Brain 8)")
-            if any(w in req_lower for w in ["language", "english", "grammar", "literature", "essay", "translation"]):
-                active_specialists.append("Language & Literature Specialist (Brain 9)")
-            if any(w in req_lower for w in ["graph", "plot", "draw", "chart", "visualize"]):
-                active_specialists.append("Dynamic Visualization Engine (Brain 10)")
-            
-            active_specialists.append("Universal Cross-Disciplinary Study Tutor (Brain 11)")
+            active_specialists = [
+                "Creative Analogy Specialist (Brain 1)",
+                "Polite & Engaging Tone Specialist (Brain 2)",
+                "Universal Study Tutor (Brain 3)"
+            ]
 
-            status.write(f"Active Council Specialists: {', '.join(active_specialists)}")
+            if any(w in req_lower for w in ["photo", "image", "picture", "scan", "document", "video", "see", "look", "diagram"]):
+                active_specialists.append("Vision & Visual Media Specialist (Brain 4)")
+            if any(w in req_lower for w in ["math", "sum", "equation", "calculus", "algebra", "arithmetic"]):
+                active_specialists.append("Mathematics Specialist (Brain 5)")
+            if any(w in req_lower for w in ["physics", "force", "motion", "gravity", "energy", "mechanics", "arduino", "circuit"]):
+                active_specialists.append("Physics & Hardware Engineering Specialist (Brain 6)")
+            if any(w in req_lower for w in ["chemistry", "reaction", "compound", "molecule", "element"]):
+                active_specialists.append("Chemistry Specialist (Brain 7)")
+            if any(w in req_lower for w in ["code", "coding", "program", "python", "developer", "software", "bug"]):
+                active_specialists.append("Computer Science Specialist (Brain 8)")
+            if any(w in req_lower for w in ["biology", "cell", "dna", "plant", "animal", "life", "medicine"]):
+                active_specialists.append("Life Sciences Specialist (Brain 9)")
+            if any(w in req_lower for w in ["history", "civics", "government", "social", "culture"]):
+                active_specialists.append("History & Social Studies Specialist (Brain 10)")
+            if any(w in req_lower for w in ["language", "english", "grammar", "literature", "essay"]):
+                active_specialists.append("Language Arts Specialist (Brain 11)")
+            if any(w in req_lower for w in ["graph", "plot", "draw", "chart", "visualize"]):
+                active_specialists.append("Dynamic Visualization Engine (Brain 12)")
+
+            active_specialists.append("Resilience & Guardrail Brain (Brain 13)")
+
+            status.write(f"Active Specialists: {', '.join(active_specialists)}")
 
             def run_specialist_consult(name):
                 prompt = (
                     f"You are the {name}. A user wants to build an AI for:\n'{user_request}'\n\n"
-                    f"Provide the exact rules, reasoning steps, and capabilities your domain provides to this system. "
-                    "Be concise, direct, and actionable (maximum 3 bullet points)."
+                    "Provide your 2 best rules to make this tool deeply creative, practical, and highly capable in your domain. "
+                    "Focus on intuition, engaging explanations, and zero robotic jargon."
                 )
-                return name, call_groq([{"role": "user", "content": prompt}], max_tok=250)
+                return name, call_groq([{"role": "user", "content": prompt}], max_tok=220, temp=0.7)
 
-            status.write("🧠 Brains 1–11: Consulting active domain specialist brains in parallel...")
+            status.write("🧠 Consulting active specialist brains in parallel...")
             specialist_directives = {}
-            with ThreadPoolExecutor(max_workers=min(len(active_specialists), 5)) as executor:
+            with ThreadPoolExecutor(max_workers=min(len(active_specialists), 6)) as executor:
                 results = executor.map(run_specialist_consult, active_specialists)
                 for name, directive in results:
                     if directive:
                         specialist_directives[name] = directive
 
-            status.write("🧠 Brain 12: Council Synthesizer assembling full operational spec and code...")
+            # Brain 14: Council Synthesizer
+            status.write("🧠 Brain 14: Council Synthesizer assembling full operational spec and code...")
             combined_domain_rules = "\n\n".join([f"### {k}\n{v}" for k, v in specialist_directives.items()])
 
             synthesis_prompt = (
-                f"You are the Council Synthesizer (Brain 12). Assemble the combined directives into one cohesive system prompt for:\n'{user_request}'\n\n"
-                f"Domain Directives:\n{combined_domain_rules}\n\n"
-                "Produce the final operational system prompt. Ensure it handles all active subject domains seamlessly, gives clear step-by-step explanations, and avoids meta-thoughts."
+                f"You are the Council Synthesizer (Brain 14). Combine these specialist directives for:\n'{user_request}'\n\n"
+                f"Specialist Guidance:\n{combined_domain_rules}\n\n"
+                "Synthesize a unified system directive that instructs the AI to be:\n"
+                "1. Highly creative with clear analogies and examples.\n"
+                "2. Respectful, encouraging, and articulate in manner.\n"
+                "3. Thoroughly competent across all requested subjects (math, physics, hardware/circuits, photos, etc.).\n"
+                "4. Free of meta-thinking or robotic outlines."
             )
-            master_system_prompt = call_groq([{"role": "user", "content": synthesis_prompt}], max_tok=700)
+            master_system_prompt = call_groq([{"role": "user", "content": synthesis_prompt}], max_tok=750, temp=0.5)
 
             code_prompt = (
-                f"Write a standalone, complete Python Streamlit app implementing this multi-domain assistant:\n{master_system_prompt}\n\n"
-                "CRITICAL: Output ONLY valid Python code inside a single ```python ``` code block. Include all required imports."
+                f"Write a standalone Python Streamlit app that implements this multi-domain assistant:\n{master_system_prompt}\n\n"
+                "CRITICAL: Output ONLY valid Python code inside a single ```python ``` code block. Include all necessary imports."
             )
             raw_code = call_groq([{"role": "user", "content": code_prompt}], max_tok=1800, temp=0.1)
             clean_code = extract_clean_code(raw_code) if raw_code else "# Code generation complete."
@@ -182,7 +190,7 @@ if st.button("Build Domain-Specialist AI", type="primary"):
                 "active_specialists": active_specialists
             }
             st.session_state.chat_history = []
-            status.update(label="Domain-Specialist Council Tool Deployed!", state="complete", expanded=False)
+            status.update(label="Creative Multi-Brain AI Ready!", state="complete", expanded=False)
             st.rerun()
 
 # Workspace UI
@@ -193,12 +201,12 @@ if st.session_state.configured_app:
     tab1, tab2 = st.tabs(["⚡ Live Custom AI Workspace", "📄 Standalone Code (.py)"])
 
     with tab1:
-        st.subheader("Domain-Specialist AI Active")
+        st.subheader("Autonomous Multi-Brain Council Active")
         st.caption(f"Specialists: {', '.join(app_info['active_specialists'])}")
 
         st.markdown("#### 📷 Image & Media Input")
         uploaded_file = st.file_uploader(
-            "Upload an image or diagram (Wait until the progress bar reaches 100%):",
+            "Upload a photo, diagram, circuit, or document:",
             type=["png", "jpg", "jpeg"],
             key="domain_file_input"
         )
@@ -237,28 +245,30 @@ if st.session_state.configured_app:
                     except Exception:
                         pass
 
-        user_input = st.chat_input("Ask any question across any subject, upload photos to explain, or request graphs...")
+        user_input = st.chat_input("Ask a question, request an explanation of the photo, or explore any topic...")
         if user_input:
             st.session_state.chat_history.append({"role": "user", "content": user_input})
             with st.chat_message("user"):
                 st.markdown(user_input)
 
             with st.chat_message("assistant"):
-                with st.spinner("Domain Council analyzing and formulating response..."):
+                with st.spinner("Council synthesizing creative response..."):
                     council_system = (
                         f"You are the deployed expert multi-domain AI tool created for: {app_info['goal']}.\n"
                         f"{app_info['system_prompt']}\n\n"
                         "OPERATING DIRECTIVES:\n"
-                        "1. Answer clearly, simply, and step-by-step for any subject.\n"
-                        "2. Never output meta-thoughts or planning paragraphs.\n"
-                        "3. When an image is attached, inspect all elements, text, and numbers thoroughly.\n"
-                        "4. If generating visual graphs, provide executable Python code using `matplotlib.pyplot as plt` and define `fig`.\n"
+                        "1. Be creative, engaging, and articulate. Use clear, vivid real-world analogies.\n"
+                        "2. Maintain a warm, polite, and encouraging tone.\n"
+                        "3. When an image is attached, describe all elements, chips, labels, numbers, or text accurately and explain what it is.\n"
+                        "4. Never output internal planning notes or 'We need to' meta-thinking.\n"
+                        "5. If generating graphs, provide clean Python code using `matplotlib.pyplot as plt` and define `fig`.\n"
                     )
 
                     img_b64 = st.session_state.get("persisted_image_b64")
                     img_mime = st.session_state.get("persisted_image_mime", "image/png")
 
                     if img_b64:
+                        # Construct a fresh vision message payload
                         user_content = [
                             {"type": "text", "text": user_input},
                             {
@@ -272,12 +282,12 @@ if st.session_state.configured_app:
                             {"role": "system", "content": council_system},
                             {"role": "user", "content": user_content}
                         ]
-                        reply = call_groq(messages, model=VISION_MODEL, max_tok=1000, temp=0.2)
+                        reply = call_groq(messages, model=VISION_MODEL, max_tok=1100, temp=0.6)
                     else:
                         messages = [{"role": "system", "content": council_system}]
                         for m in st.session_state.chat_history:
                             messages.append({"role": m["role"], "content": m["content"]})
-                        reply = call_groq(messages, model=TEXT_MODEL, max_tok=1000, temp=0.2)
+                        reply = call_groq(messages, model=TEXT_MODEL, max_tok=1000, temp=0.6)
 
                     if reply:
                         st.markdown(reply)
@@ -301,7 +311,7 @@ if st.session_state.configured_app:
 
     with tab2:
         st.subheader("Generated Python Code")
-        st.caption("Complete code compiled across all active domain specialist brains:")
+        st.caption("Complete code compiled across all active specialist brains:")
         st.code(app_info["source_code"], language="python")
         st.download_button(
             "Download Source Code (.py)",
