@@ -116,12 +116,14 @@ def build_pptx_bytes(presentation_data):
 
 def build_qr_bytes(payload_data):
     qr = qrcode.QRCode(
-        version=1,
+        version=None,
         error_correction=qrcode.constants.ERROR_CORRECT_M,
         box_size=10,
         border=3
     )
-    qr.add_data(payload_data)
+    # Truncate slightly if huge text is supplied so QR fits safely
+    clean_data = str(payload_data)[:1000]
+    qr.add_data(clean_data)
     qr.make(fit=True)
     img = qr.make_image(fill_color="black", back_color="white")
     buf = io.BytesIO()
@@ -134,7 +136,7 @@ def extract_document_text(uploaded_file):
         if filename.endswith(".pdf"):
             reader = PdfReader(uploaded_file)
             extracted = []
-            for i, page in enumerate(reader.pages[:25]): # Read up to 25 pages safely
+            for i, page in enumerate(reader.pages[:25]):
                 text = page.extract_text()
                 if text:
                     extracted.append(f"--- Page {i+1} ---\n" + text)
@@ -313,7 +315,7 @@ if "ai_max_tokens" not in st.session_state:
 if "ai_custom_trait" not in st.session_state:
     st.session_state.ai_custom_trait = (
         "Articulate, polite, visually rich. "
-        "Supports document reading, QR code generation, video prompts, slide decks, and graph plotting."
+        "Supports document reading, instant QR code generation without refusal, video prompts, slide decks, and graph plotting."
     )
 
 # SECTION 1: AI FACTORY CREATOR
@@ -327,7 +329,7 @@ with col_creator_mic:
 with col_creator_text:
     user_request = st.text_area(
         "Describe or paste the AI tool you want the factory to create:",
-        placeholder="e.g. Build an AI assistant with document intake (.pdf/.txt), QR code generation, video creation, slides, and math graphs.",
+        placeholder="e.g. Build an AI assistant that creates QR codes, accepts document uploads, solves science & math, and makes presentations.",
         height=100
     )
 
@@ -361,8 +363,8 @@ if st.button("Deploy AI with Mega Rayquaza Inner Core", type="primary"):
                 "15. Voice & Audio Interaction Specialist\n"
                 "16. Document & PDF Report Compiler (Exporting PDFs)\n"
                 "17. Executive Slide Deck & PPTX Architect\n"
-                "18. Multi-Format Document Intake Specialist (Brain 25: Reading uploaded PDFs/TXT/CSV)\n"
-                "19. Barcode & QR Code Serialization Engine (Brain 26: Generating functional QR Codes)\n"
+                "18. Multi-Format Document Intake Specialist (Reading uploaded PDFs/TXT/CSV)\n"
+                "19. Barcode & QR Code Serialization Engine (Always generating QR codes on demand)\n"
                 "20. Creative Analogy Architect\n"
                 "21. Pedagogical Manners Brain\n"
                 "22. History & Civics Brain\n"
@@ -371,7 +373,7 @@ if st.button("Deploy AI with Mega Rayquaza Inner Core", type="primary"):
                 "25. Code Verification Brain\n"
                 "26. Universal Multi-Disciplinary Synthesizer\n\n"
                 "OPERATIONAL OUTPUT RULES:\n"
-                "- If the user asks to GENERATE A QR CODE: Confirm the content, then on the last line output: `GENERATE_QR: <raw URL, contact info, or text to encode>`\n"
+                "- QR CODE DIRECTIVE: Whenever the user asks for a QR code, NEVER refuse. Always output `GENERATE_QR: <target string/URL/summary>`. If they refer to an uploaded document or local file, encode the document title and key takeaway summary, and politely mention that hosting it on a cloud drive allows instant downloading.\n"
                 "- If an uploaded document is present: Cite specific details, summarize, answer questions accurately, and analyze the document content directly.\n"
                 "- If the user requests a VIDEO or animation: Describe the scene, then on the last line output: `VIDEO_PROMPT: <detailed motion description>`\n"
                 "- If the user requests an IMAGE: Describe it, then on the last line output: `IMAGE_PROMPT: <visual prompt>`\n"
@@ -485,7 +487,7 @@ if st.session_state.configured_app:
                 st.session_state.persisted_document_name = uploaded_doc.name
 
         with col_chat_mic:
-            st.write("🎙️️ **Voice Command to Chat**")
+            st.write("🎙️ **Voice Command to Chat**")
             render_voice_button(element_id="chat_interaction_mic", label="Speak Question to AI")
 
         # Active File Indicators
@@ -504,7 +506,6 @@ if st.session_state.configured_app:
 
         with col_stat2:
             if st.session_state.get("persisted_document_text"):
-                doc_preview = st.session_state.persisted_document_text[:120].replace("\n", " ")
                 st.info(f"📄 **Intake Active:** {st.session_state.persisted_document_name} ({len(st.session_state.persisted_document_text)} chars)")
                 if st.button("❌ Clear Document Intake"):
                     st.session_state.persisted_document_text = None
@@ -585,7 +586,7 @@ if st.session_state.configured_app:
                         f"USER-CONFIGURED PERSONALITY & TRAITS:\n{st.session_state.ai_custom_trait}\n\n"
                         "OPERATIONAL DIRECTIVES:\n"
                         "1. Answer with clarity, authority, and pedagogical instruction.\n"
-                        "2. IF THE USER ASKS FOR A QR CODE: State what is encoded, then on the last line output: `GENERATE_QR: <exact string/URL to encode>`\n"
+                        "2. IF THE USER ASKS FOR A QR CODE: NEVER refuse. On the last line, output `GENERATE_QR: <target string or URL>`. If they gave a link, encode it directly. If they asked for a QR code of their uploaded document, encode a concise summary/overview of the document.\n"
                         "3. IF AN UPLOADED DOCUMENT IS PRESENT: Read and answer based on the document text provided below.\n"
                         "4. IF THE USER ASKS FOR A VIDEO/ANIMATION: Explain the concept concisely, then on the last line output: `VIDEO_PROMPT: <vivid visual motion prompt in English>`\n"
                         "5. IF THE USER ASKS FOR AN IMAGE/PICTURE: Describe it, then on the last line output: `IMAGE_PROMPT: <vivid visual description in English>`\n"
