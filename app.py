@@ -56,9 +56,9 @@ if not api_key:
         api_key = sanitize_text(raw_key)
 
 TEXT_MODEL = "openai/gpt-oss-20b"
-VISION_MODEL = "llama-3.2-90b-vision-preview"
+VISION_MODEL = "llama-3.2-11b-vision-preview"
 
-def call_groq(messages, model=TEXT_MODEL, key=api_key, max_tok=1000, temp=0.6):
+def call_groq(messages, model=TEXT_MODEL, key=api_key, max_tok=800, temp=0.5):
     clean_k = sanitize_text(key)
     headers = {
         "Authorization": f"Bearer {clean_k}",
@@ -82,15 +82,18 @@ def call_groq(messages, model=TEXT_MODEL, key=api_key, max_tok=1000, temp=0.6):
             msg = res.json()["choices"][0]["message"]
             content = msg.get("content") or msg.get("reasoning") or ""
             return strip_internal_thoughts(content)
-        elif "vision" in model and res.status_code != 200:
-            payload["model"] = "llama-3.2-11b-vision-preview"
-            fb = requests.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=payload, timeout=35)
-            if fb.status_code == 200:
-                msg = fb.json()["choices"][0]["message"]
-                return strip_internal_thoughts(msg.get("content") or msg.get("reasoning") or "")
-        return None
-    except Exception:
-        return None
+        else:
+            if "vision" in model:
+                payload["model"] = "llama-3.2-90b-vision-preview"
+                payload["max_tokens"] = 600
+                fb = requests.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=payload, timeout=35)
+                if fb.status_code == 200:
+                    msg = fb.json()["choices"][0]["message"]
+                    return strip_internal_thoughts(msg.get("content") or msg.get("reasoning") or "")
+                return f"Vision API Error: {fb.status_code} - {fb.text}"
+            return f"API Error: {res.status_code} - {res.text}"
+    except Exception as exc:
+        return f"Request failed: {exc}"
 
 # State Initialization
 if "configured_app" not in st.session_state:
@@ -104,7 +107,7 @@ if "persisted_image_mime" not in st.session_state:
 
 user_request = st.text_area(
     "What kind of AI tool do you want to create?",
-    placeholder="e.g. Build an AI that understands photos, solves math and physics, creates graphs, and explains everything with creative analogies in a friendly tone"
+    placeholder="e.g. Build an AI that understands photos, solves math and physics, creates graphs, and explains hardware with clear code and diagrams"
 )
 
 if st.button("Build Multi-Brain AI", type="primary"):
@@ -151,7 +154,7 @@ if st.button("Build Multi-Brain AI", type="primary"):
                     "Provide your 2 best rules to make this tool deeply creative, practical, and highly capable in your domain. "
                     "Focus on intuition, engaging explanations, and zero robotic jargon."
                 )
-                return name, call_groq([{"role": "user", "content": prompt}], max_tok=220, temp=0.7)
+                return name, call_groq([{"role": "user", "content": prompt}], max_tok=220, temp=0.6)
 
             status.write("🧠 Consulting active specialist brains in parallel...")
             specialist_directives = {}
@@ -161,7 +164,6 @@ if st.button("Build Multi-Brain AI", type="primary"):
                     if directive:
                         specialist_directives[name] = directive
 
-            # Brain 14: Council Synthesizer
             status.write("🧠 Brain 14: Council Synthesizer assembling full operational spec and code...")
             combined_domain_rules = "\n\n".join([f"### {k}\n{v}" for k, v in specialist_directives.items()])
 
@@ -171,10 +173,10 @@ if st.button("Build Multi-Brain AI", type="primary"):
                 "Synthesize a unified system directive that instructs the AI to be:\n"
                 "1. Highly creative with clear analogies and examples.\n"
                 "2. Respectful, encouraging, and articulate in manner.\n"
-                "3. Thoroughly competent across all requested subjects (math, physics, hardware/circuits, photos, etc.).\n"
+                "3. Thoroughly competent across all requested subjects (math, physics, hardware, circuits, code, photos).\n"
                 "4. Free of meta-thinking or robotic outlines."
             )
-            master_system_prompt = call_groq([{"role": "user", "content": synthesis_prompt}], max_tok=750, temp=0.5)
+            master_system_prompt = call_groq([{"role": "user", "content": synthesis_prompt}], max_tok=750, temp=0.4)
 
             code_prompt = (
                 f"Write a standalone Python Streamlit app that implements this multi-domain assistant:\n{master_system_prompt}\n\n"
@@ -245,21 +247,21 @@ if st.session_state.configured_app:
                     except Exception:
                         pass
 
-        user_input = st.chat_input("Ask a question, request an explanation of the photo, or explore any topic...")
+        user_input = st.chat_input("Ask a question, request code/circuits, or explore any topic...")
         if user_input:
             st.session_state.chat_history.append({"role": "user", "content": user_input})
             with st.chat_message("user"):
                 st.markdown(user_input)
 
             with st.chat_message("assistant"):
-                with st.spinner("Council synthesizing creative response..."):
+                with st.spinner("Council synthesizing response..."):
                     council_system = (
                         f"You are the deployed expert multi-domain AI tool created for: {app_info['goal']}.\n"
                         f"{app_info['system_prompt']}\n\n"
                         "OPERATING DIRECTIVES:\n"
-                        "1. Be creative, engaging, and articulate. Use clear, vivid real-world analogies.\n"
-                        "2. Maintain a warm, polite, and encouraging tone.\n"
-                        "3. When an image is attached, describe all elements, chips, labels, numbers, or text accurately and explain what it is.\n"
+                        "1. Be creative, engaging, and articulate. Provide working code, step-by-step pinouts, and clear explanations.\n"
+                        "2. Maintain a warm, encouraging tone.\n"
+                        "3. When an image is attached, describe all elements, chips, labels, numbers, or text accurately.\n"
                         "4. Never output internal planning notes or 'We need to' meta-thinking.\n"
                         "5. If generating graphs, provide clean Python code using `matplotlib.pyplot as plt` and define `fig`.\n"
                     )
@@ -268,7 +270,6 @@ if st.session_state.configured_app:
                     img_mime = st.session_state.get("persisted_image_mime", "image/png")
 
                     if img_b64:
-                        # Construct a fresh vision message payload
                         user_content = [
                             {"type": "text", "text": user_input},
                             {
@@ -282,12 +283,12 @@ if st.session_state.configured_app:
                             {"role": "system", "content": council_system},
                             {"role": "user", "content": user_content}
                         ]
-                        reply = call_groq(messages, model=VISION_MODEL, max_tok=1100, temp=0.6)
+                        reply = call_groq(messages, model=VISION_MODEL, max_tok=1000, temp=0.5)
                     else:
                         messages = [{"role": "system", "content": council_system}]
                         for m in st.session_state.chat_history:
                             messages.append({"role": m["role"], "content": m["content"]})
-                        reply = call_groq(messages, model=TEXT_MODEL, max_tok=1000, temp=0.6)
+                        reply = call_groq(messages, model=TEXT_MODEL, max_tok=1000, temp=0.5)
 
                     if reply:
                         st.markdown(reply)
