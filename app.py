@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 st.set_page_config(page_title="20-Brain Mega-Council Factory", layout="wide")
 
 st.title("Universal AI Factory (20-Specialist Council)")
-st.caption("Orchestrated across 20 specialized domains with automatic visual rendering.")
+st.caption("Now with Active Graph Rendering & Vector Diagram Generation")
 
 def sanitize_text(text):
     if not text:
@@ -111,7 +111,7 @@ if "persisted_image_mime" not in st.session_state:
 
 user_request = st.text_area(
     "What kind of AI tool do you want to create?",
-    placeholder="e.g. Build an AI that can draw graphs, inspect circuits/photos, solve math and physics, and explain concepts simply without dumping raw code."
+    placeholder="e.g. Build an AI that can draw mathematical graphs, render diagrams, inspect hardware photos, and explain concepts simply."
 )
 
 if st.button("Deploy 20-Brain Mega-Council", type="primary"):
@@ -121,34 +121,35 @@ if st.button("Deploy 20-Brain Mega-Council", type="primary"):
         st.warning("Please describe what tool you want to create.")
     else:
         with st.status("Concurring 20-Brain Mega-Council...", expanded=True) as status:
-            status.write("🧠 Orchestrating all 20 specialized departments...")
+            status.write("🧠 Synthesizing 20-department operational directive...")
             
             council_synthesis_prompt = (
-                f"You are the Supreme Council Moderator. Synthesize an operational directive for this tool objective:\n'{user_request}'\n\n"
-                "Unify the principles of all 20 specialist brains:\n"
-                "1. Hardware & Electronics Specialist (Circuits, Arduino, Microcontrollers, Pinouts)\n"
-                "2. Vision & Diagram Inspector (OCR, Image Parsing, Visual Inspection)\n"
-                "3. Pure & Applied Mathematics Brain (Algebra, Calculus, Step-by-Step Proofs)\n"
-                "4. Theoretical & Classical Physics Engine (Kinematics, Optics, Forces)\n"
-                "5. Chemistry & Material Dynamics Specialist (Reactions, Balancing, Molecules)\n"
-                "6. Computer Science & Algorithm Engine (Data Structures, Logic)\n"
+                f"You are the Supreme Council Moderator. Build the operational prompt for: '{user_request}'.\n\n"
+                "Incorporate all 20 domains:\n"
+                "1. Hardware & Electronics Specialist\n"
+                "2. Vision & Diagram Inspector\n"
+                "3. Pure & Applied Mathematics Brain\n"
+                "4. Theoretical & Classical Physics Engine\n"
+                "5. Chemistry Specialist\n"
+                "6. Computer Science & Algorithm Engine\n"
                 "7. Software Engineering Brain\n"
-                "8. Microcontroller Firmware Specialist (C/C++, GPIO, Registers)\n"
-                "9. Life Sciences & Bioengineering Brain (Biology, Physiology)\n"
-                "10. Statistical Modeling Brain (Probability, Analytics)\n"
-                "11. Dynamic Visualizer & Plotting Engine (Matplotlib/Plotly Figures)\n"
-                "12. Creative Analogy Architect (Intuitive Real-World Comparisons)\n"
-                "13. Pedagogical Manners Brain (Warm, Encouraging, Respectful Tone)\n"
-                "14. History & Civics Brain (Context, Timelines)\n"
-                "15. Linguistics & Language Arts Specialist (Clarity, Rhetoric)\n"
-                "16. Edge Case & Failure Analyst (Boundary errors, Zero-division)\n"
-                "17. Code Verification Brain (Pre-checking runtime safety)\n"
-                "18. Output Guardrail Brain (Preventing thought-leaks)\n"
-                "19. Universal Cross-Disciplinary Tutor (Connecting all fields)\n"
-                "20. Council Moderator (Unified coherent output formulation)\n\n"
-                "CRITICAL OUTPUT RULE: Never dump raw Python code to users unless they explicitly ask for code. "
-                "Explain everything conceptually and mathematically in plain text. "
-                "If a plot or graph is required, write only the executable plotting block inside a ```python ``` block at the very end so the system can render it visually."
+                "8. Microcontroller Firmware Specialist\n"
+                "9. Life Sciences Brain\n"
+                "10. Statistical Modeling Brain\n"
+                "11. Dynamic Visualizer & Graph Plotter\n"
+                "12. Creative Analogy Architect\n"
+                "13. Pedagogical Manners Brain\n"
+                "14. History & Civics Brain\n"
+                "15. Linguistics Specialist\n"
+                "16. Edge Case & Failure Analyst\n"
+                "17. Code Verification Brain\n"
+                "18. Visual Renderer Engine (SVG & Matplotlib)\n"
+                "19. Universal Cross-Disciplinary Tutor\n"
+                "20. Council Moderator\n\n"
+                "CRITICAL OUTPUT RULES:\n"
+                "- If the user asks to DRAW, PLOT, or GRAPH an equation, explain the equation first, then supply a Python block with `plt.figure()` and `plt.plot()` defining `fig` at the very end.\n"
+                "- If the user asks to GENERATE AN IMAGE, DIAGRAM, or ILLUSTRATION, supply a valid, clean SVG vector illustration enclosed inside an ```xml ``` block.\n"
+                "- Never show raw code explanations unless the word 'code' was explicitly requested."
             )
             
             master_system_prompt = call_groq(
@@ -158,10 +159,10 @@ if st.button("Deploy 20-Brain Mega-Council", type="primary"):
                 temp=0.4
             )
 
-            status.write("🧠 Compiling standalone Python package...")
+            status.write("🧠 Compiling standalone production code...")
             code_prompt = (
-                f"Write a complete standalone Streamlit application based on this directive:\n{master_system_prompt}\n\n"
-                "REQUIREMENTS: Return ONLY executable Python code inside a single ```python ``` block."
+                f"Write a standalone Streamlit Python app implementing this directive:\n{master_system_prompt}\n\n"
+                "Output ONLY executable Python code inside a single ```python ``` code block."
             )
             raw_code = call_groq(
                 [{"role": "user", "content": code_prompt}],
@@ -219,11 +220,17 @@ if st.session_state.configured_app:
                     st.session_state.persisted_image_mime = None
                     st.rerun()
 
-        # Render conversation history
+        # Render conversation history with graphs & SVG diagrams
         for msg in st.session_state.chat_history:
             with st.chat_message(msg["role"]):
                 if msg.get("text_content"):
                     st.markdown(msg["text_content"])
+                
+                # Render SVG image if generated
+                if msg.get("svg_content"):
+                    st.markdown(msg["svg_content"], unsafe_allow_html=True)
+                
+                # Render Python Matplotlib Plot if generated
                 if msg.get("plot_code"):
                     try:
                         exec_env = {"np": np, "plt": plt}
@@ -234,89 +241,18 @@ if st.session_state.configured_app:
                     except Exception:
                         pass
 
-        user_input = st.chat_input("Ask any question, request explanations, inspect hardware, or plot graphs...")
+        user_input = st.chat_input("Ask a question, request a graph (e.g. plot y^2=4ax), or ask for a diagram...")
         if user_input:
             st.session_state.chat_history.append({"role": "user", "text_content": user_input})
             with st.chat_message("user"):
                 st.markdown(user_input)
 
             with st.chat_message("assistant"):
-                with st.spinner("20-Brain Council analyzing and generating output..."):
+                with st.spinner("Council analyzing and generating visual output..."):
                     council_system = (
                         f"You are the deployed expert AI system created for: {app_info['goal']}.\n"
                         f"{app_info['system_prompt']}\n\n"
                         "OPERATIONAL DIRECTIVES:\n"
-                        "1. Answer in clear, polite English with intuitive analogies and step-by-step mathematical reasoning.\n"
-                        "2. DO NOT show raw Python code blocks in your explanation unless the user specifically typed the word 'code'.\n"
-                        "3. If the user asks to draw or plot a graph, provide the explanation first. At the very end of your response, write ONLY the executable Python script defining `fig` inside a ```python ``` block so the frontend can render it visually.\n"
-                        "4. Never output internal planning notes or 'We need to' scratchpads.\n"
-                    )
-
-                    img_b64 = st.session_state.get("persisted_image_b64")
-                    img_mime = st.session_state.get("persisted_image_mime", "image/png")
-
-                    if img_b64:
-                        user_content = [
-                            {"type": "text", "text": user_input},
-                            {
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:{img_mime};base64,{img_b64}"
-                                }
-                            }
-                        ]
-                        messages = [
-                            {"role": "system", "content": council_system},
-                            {"role": "user", "content": user_content}
-                        ]
-                        reply = call_groq(messages, model=PRIMARY_VISION_MODEL, max_tok=1200, temp=0.4)
-                    else:
-                        messages = [{"role": "system", "content": council_system}]
-                        for m in st.session_state.chat_history:
-                            if m.get("text_content"):
-                                messages.append({"role": m["role"], "content": m["text_content"]})
-                        reply = call_groq(messages, model=PRIMARY_TEXT_MODEL, max_tok=1400, temp=0.4)
-
-                    if reply:
-                        # Extract plot code
-                        code_match = re.search(r"```(?:python)?\s*(.*?fig\s*=.*?)\s*```", reply, re.DOTALL)
-                        
-                        # Strip code block out of the conversational display unless explicitly requested
-                        text_to_show = reply
-                        plot_code_to_run = None
-                        
-                        if code_match and "code" not in user_input.lower():
-                            plot_code_to_run = code_match.group(1)
-                            # Remove the code block from the visible text bubble
-                            text_to_show = re.sub(r"```(?:python)?\s*.*?fig\s*=.*?\s*```", "", reply, flags=re.DOTALL).strip()
-
-                        if text_to_show:
-                            st.markdown(text_to_show)
-
-                        # Render the actual visual plot
-                        if plot_code_to_run:
-                            try:
-                                exec_env = {"np": np, "plt": plt}
-                                exec(plot_code_to_run, exec_env)
-                                fig = exec_env.get("fig") or plt.gcf()
-                                st.pyplot(fig)
-                                plt.clf()
-                            except Exception:
-                                pass
-
-                        st.session_state.chat_history.append({
-                            "role": "assistant",
-                            "text_content": text_to_show,
-                            "plot_code": plot_code_to_run
-                        })
-
-    with tab2:
-        st.subheader("Generated Python Code")
-        st.caption("Complete code compiled across all 20 specialist brains:")
-        st.code(app_info["source_code"], language="python")
-        st.download_button(
-            "Download Source Code (.py)",
-            data=app_info["source_code"],
-            file_name="custom_ai_app.py",
-            mime="text/plain"
-        )
+                        "1. Answer in clear, polite English with intuitive explanations.\n"
+                        "2. IF DRAWING A GRAPH OR EQUATION: Provide the mathematical explanation first. At the very end, provide ONLY executable plotting code using `matplotlib.pyplot as plt` and `numpy as np` defining a figure variable named `fig` inside a ```python ``` code block.\n"
+                        "3. IF GENERATING A DIAGRAM OR IMAGE: Output an inline SVG XML representation inside an ```xml
