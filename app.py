@@ -38,9 +38,9 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<p class="rayquaza-header">Universal AI Factory: 23-Brain Council</p>', unsafe_allow_html=True)
-st.markdown('<span class="apex-badge">🐉 Inner Core: Mega Rayquaza (Apex Governor with Live AI Trait Editor)</span>', unsafe_allow_html=True)
-st.caption("Voice Command, Real Image Generation, Matplotlib Graphing, Circuit Inspection, PPTX Slides, PDF Reports & Live Characteristic Customizer.")
+st.markdown('<p class="rayquaza-header">Universal AI Factory: 24-Brain Council</p>', unsafe_allow_html=True)
+st.markdown('<span class="apex-badge">🐉 Inner Core: Mega Rayquaza (Apex Governor with Video, PPTX & PDF Engines)</span>', unsafe_allow_html=True)
+st.caption("Voice Command, Real-Time Video & Image Generation, Matplotlib Graphing, Circuit Inspection, PPTX Slides & PDF Reports.")
 
 def sanitize_text(text):
     if not text:
@@ -265,7 +265,7 @@ if "ai_creativity" not in st.session_state:
 if "ai_max_tokens" not in st.session_state:
     st.session_state.ai_max_tokens = 1400
 if "ai_custom_trait" not in st.session_state:
-    st.session_state.ai_custom_trait = "Articulate, polite, highly intuitive with analogies, and mathematically rigorous."
+    st.session_state.ai_custom_trait = "Articulate, polite, visually rich with video/image/audio capabilities, and rigorous."
 
 # AI FACTORY CREATOR SECTION WITH VOICE COMMAND
 st.subheader("1. AI Factory Creator (Voice or Text)")
@@ -278,7 +278,7 @@ with col_creator_mic:
 with col_creator_text:
     user_request = st.text_area(
         "Describe or paste the AI tool you want the factory to create:",
-        placeholder="e.g. Build an AI assistant with voice input, PowerPoint creation, PDF documents, math graphs, and circuit explanations.",
+        placeholder="e.g. Build an AI assistant with voice input, video generation, PowerPoint creation, PDF documents, math graphs, and circuit explanations.",
         height=100
     )
 
@@ -288,13 +288,13 @@ if st.button("Deploy AI with Mega Rayquaza Inner Core", type="primary"):
     elif not user_request.strip():
         st.warning("Please describe what tool you want to create (speak via microphone or type above).")
     else:
-        with st.status("Awakening Mega Rayquaza & The 23-Brain Council...", expanded=True) as status:
-            status.write("🐉 Channeling the Delta Stream: Harmonizing 23 specialized brains...")
+        with st.status("Awakening Mega Rayquaza & The 24-Brain Council...", expanded=True) as status:
+            status.write("🐉 Channeling the Delta Stream: Harmonizing 24 specialized brains...")
             
             council_synthesis_prompt = (
-                f"You are the Mega Rayquaza Core — the apex intelligence presiding over the 23-Brain Council. "
+                f"You are the Mega Rayquaza Core — the apex intelligence presiding over the 24-Brain Council. "
                 f"A creator commands the deployment of an assistant designed for: '{user_request}'.\n\n"
-                "Command the full 23 departments into alignment:\n"
+                "Command the full 24 departments into alignment:\n"
                 "1. Inner Apex Core: Mega Rayquaza\n"
                 "2. Hardware & Electronics Specialist (Circuits, Arduino, Microcontrollers, Pinouts)\n"
                 "3. Vision & Diagram Inspector (OCR, Visual Hardware Analysis)\n"
@@ -307,21 +307,23 @@ if st.button("Deploy AI with Mega Rayquaza Inner Core", type="primary"):
                 "10. Life Sciences & Biology Brain\n"
                 "11. Statistical Modeling Brain\n"
                 "12. Dynamic Visualizer & Graph Plotter\n"
-                "13. Image Generation Prompt Specialist\n"
-                "14. Voice & Audio Interaction Specialist\n"
-                "15. Document & PDF Report Compiler (Brain 22)\n"
-                "16. Executive Slide Deck & PPTX Architect (Brain 23)\n"
-                "17. Creative Analogy Architect\n"
-                "18. Pedagogical Manners Brain\n"
-                "19. History & Civics Brain\n"
-                "20. Linguistics Specialist\n"
-                "21. Edge Case & Failure Analyst\n"
-                "22. Code Verification Brain\n"
-                "23. Universal Multi-Disciplinary Synthesizer\n\n"
+                "13. Motion & Video Generation Specialist (Brain 24)\n"
+                "14. Still Image Generation Prompt Specialist\n"
+                "15. Voice & Audio Interaction Specialist\n"
+                "16. Document & PDF Report Compiler\n"
+                "17. Executive Slide Deck & PPTX Architect\n"
+                "18. Creative Analogy Architect\n"
+                "19. Pedagogical Manners Brain\n"
+                "20. History & Civics Brain\n"
+                "21. Linguistics Specialist\n"
+                "22. Edge Case & Failure Analyst\n"
+                "23. Code Verification Brain\n"
+                "24. Universal Multi-Disciplinary Synthesizer\n\n"
                 "OPERATIONAL OUTPUT RULES:\n"
+                "- If the user requests a VIDEO, ANIMATION, or CLIP: Describe the motion scene, then on the last line output: `VIDEO_PROMPT: <detailed dynamic motion description in English>`\n"
+                "- If the user requests an IMAGE or PICTURE: Describe it, then on the last line output: `IMAGE_PROMPT: <visual prompt>`\n"
                 "- If the user requests a PRESENTATION, SLIDES, or PPT: Output a clean JSON block inside ```json ``` with structure: {\"slides\": [{\"title\": \"...\", \"bullets\": [\"...\", \"...\"]}]}.\n"
                 "- If the user requests a PDF, REPORT, or NOTES: Provide the full structured document text and conclude with `GENERATE_PDF: <Document Title>`.\n"
-                "- If the user requests an IMAGE: Describe it, then on the last line output: `IMAGE_PROMPT: <visual prompt>`.\n"
                 "- If DRAWING A GRAPH: Supply executable code using `matplotlib.pyplot as plt` and `numpy as np` defining `fig` inside a python code block.\n"
                 "- Never dump raw code unless the user explicitly requested code."
             )
@@ -365,17 +367,16 @@ if st.session_state.configured_app:
     # TAB 2: LIVE CHARACTERISTICS & BEHAVIOR EDITOR
     with tab2:
         st.subheader("Customize & Tune AI Characteristics")
-        st.caption("Change how your created AI behaves, responds, and creates without having to rebuild it from scratch.")
+        st.caption("Change how your created AI behaves, responds, and generates videos/images without rebuilding from scratch.")
 
         col_c1, col_c2 = st.columns(2)
         with col_c1:
             st.session_state.ai_creativity = st.slider(
-                "Creativity & Imagination Level (Temperature)",
+                "Creativity Level (Temperature)",
                 min_value=0.0,
                 max_value=1.0,
                 value=float(st.session_state.ai_creativity),
-                step=0.05,
-                help="Higher values make responses more creative, exploratory, and analogy-rich. Lower values make them strictly factual."
+                step=0.05
             )
         with col_c2:
             st.session_state.ai_max_tokens = st.slider(
@@ -383,23 +384,20 @@ if st.session_state.configured_app:
                 min_value=400,
                 max_value=2500,
                 value=int(st.session_state.ai_max_tokens),
-                step=100,
-                help="Controls how comprehensive or concise the AI's answers, slides, and documents will be."
+                step=100
             )
 
         st.session_state.ai_custom_trait = st.text_area(
             "Persona, Tone & Specific Characteristic Instructions:",
-            value=st.session_state.ai_custom_trait,
-            help="Type custom traits here. For example: 'Always use humorous physics analogies', 'Explain concepts like I am 12 years old', or 'Act as a Senior Embedded Systems Engineer'."
+            value=st.session_state.ai_custom_trait
         )
 
         app_info["system_prompt"] = st.text_area(
             "Council Operational Directives (Direct Prompt Edit):",
             value=app_info["system_prompt"],
-            height=180,
-            help="You can manually edit the exact instructions the 23-Brain Council follows."
+            height=180
         )
-        st.success("✅ Characteristics auto-saved! Your next prompt in the chat will use these updated behaviors.")
+        st.success("✅ Characteristics auto-saved! Next prompts will utilize these updated behaviors.")
 
     # TAB 1: WORKSPACE
     with tab1:
@@ -440,15 +438,21 @@ if st.session_state.configured_app:
                     st.session_state.persisted_image_mime = None
                     st.rerun()
 
-        # Render conversation history with unique keys to prevent duplicate element crashes
+        # Render conversation history with unique keys
         for idx, msg in enumerate(st.session_state.chat_history):
             with st.chat_message(msg["role"]):
                 if msg.get("text_content"):
                     st.markdown(msg["text_content"])
                 
+                # Render Generated Video
+                if msg.get("video_url"):
+                    st.video(msg["video_url"])
+                
+                # Render Generated Image
                 if msg.get("image_url"):
                     st.image(msg["image_url"], caption="Generated via Mega Rayquaza Visual Core", use_container_width=True)
                 
+                # Render Matplotlib Graph
                 if msg.get("plot_code"):
                     try:
                         exec_env = {"np": np, "plt": plt}
@@ -478,25 +482,26 @@ if st.session_state.configured_app:
                     )
 
         # Chat Input Bar
-        user_input = st.chat_input("Speak via mic above, paste, or type your request (e.g. 'Make a PPT on Robotics', 'Generate PDF notes on Ohm\\'s law')...")
+        user_input = st.chat_input("Ask a question, generate video (e.g. 'generate video of ocean waves'), create PPT, or plot a graph...")
         if user_input:
             st.session_state.chat_history.append({"role": "user", "text_content": user_input})
             with st.chat_message("user"):
                 st.markdown(user_input)
 
             with st.chat_message("assistant"):
-                with st.spinner("Mega Rayquaza Inner Core synthesizing response..."):
+                with st.spinner("Mega Rayquaza synthesizing media and council output..."):
                     council_system = (
                         f"You are the deployed expert AI system created for: {app_info['goal']}.\n"
                         f"{app_info['system_prompt']}\n\n"
                         f"USER-CONFIGURED PERSONALITY & TRAITS:\n{st.session_state.ai_custom_trait}\n\n"
                         "OPERATIONAL DIRECTIVES:\n"
                         "1. Answer with clarity, authority, and polite pedagogical instruction.\n"
-                        "2. IF THE USER ASKS FOR A PRESENTATION/SLIDES/PPT: Provide a summary in text, then output a JSON block inside ```json ``` with structure: {\"slides\": [{\"title\": \"...\", \"bullets\": [\"...\", \"...\"]}]}.\n"
-                        "3. IF THE USER ASKS FOR A PDF/REPORT/NOTES: Write the document thoroughly, and finish on the last line with: `GENERATE_PDF: <Title>`.\n"
-                        "4. IF THE USER ASKS FOR AN IMAGE: On the last line output: `IMAGE_PROMPT: <vivid visual description in English>`.\n"
-                        "5. IF DRAWING A GRAPH: Supply executable plotting code using matplotlib.pyplot as plt and numpy as np defining fig inside a python code block.\n"
-                        "6. Never output internal thoughts or planning notes."
+                        "2. IF THE USER ASKS FOR A VIDEO/ANIMATION/CLIP: Describe the scene in 1-2 sentences, then on the last line output: `VIDEO_PROMPT: <cinematic motion prompt in English>`\n"
+                        "3. IF THE USER ASKS FOR AN IMAGE/PICTURE: Describe it, then on the last line output: `IMAGE_PROMPT: <vivid visual description in English>`\n"
+                        "4. IF THE USER ASKS FOR A PRESENTATION/SLIDES/PPT: Provide a summary in text, then output a JSON block inside ```json ``` with structure: {\"slides\": [{\"title\": \"...\", \"bullets\": [\"...\", \"...\"]}]}.\n"
+                        "5. IF THE USER ASKS FOR A PDF/REPORT/NOTES: Write the document thoroughly, and finish on the last line with: `GENERATE_PDF: <Title>`.\n"
+                        "6. IF DRAWING A GRAPH: Supply executable plotting code using matplotlib.pyplot as plt and numpy as np defining fig inside a python code block.\n"
+                        "7. Never output internal thoughts or planning notes."
                     )
 
                     img_b64 = st.session_state.get("persisted_image_b64")
@@ -528,14 +533,25 @@ if st.session_state.configured_app:
                         reply = call_groq(messages, model=PRIMARY_TEXT_MODEL, max_tok=current_tokens, temp=current_temp)
 
                     if reply:
+                        # Extract Video Generation
+                        video_url = None
+                        vid_prompt_match = re.search(r"VIDEO_PROMPT:\s*(.+)", reply, re.IGNORECASE)
+                        if vid_prompt_match:
+                            raw_vid_prompt = vid_prompt_match.group(1).strip()
+                            clean_vid_prompt = re.sub(r"[^\w\s,.-]", "", raw_vid_prompt)
+                            encoded_vid = urllib.parse.quote(clean_vid_prompt[:250])
+                            video_url = f"https://image.pollinations.ai/prompt/{encoded_vid}?model=video&width=512&height=512"
+
+                        # Extract Image Generation
                         image_url = None
                         img_prompt_match = re.search(r"IMAGE_PROMPT:\s*(.+)", reply, re.IGNORECASE)
-                        if img_prompt_match:
+                        if img_prompt_match and not video_url:
                             raw_prompt = img_prompt_match.group(1).strip()
                             clean_prompt = re.sub(r"[^\w\s,.-]", "", raw_prompt)
                             encoded_prompt = urllib.parse.quote(clean_prompt[:250])
                             image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=768&height=512&nologo=true"
 
+                        # Extract PDF
                         pdf_data = None
                         pdf_title = "Document"
                         pdf_match = re.search(r"GENERATE_PDF:\s*(.+)", reply, re.IGNORECASE)
@@ -544,6 +560,7 @@ if st.session_state.configured_app:
                             body_for_pdf = re.sub(r"GENERATE_PDF:\s*.+", "", reply, flags=re.IGNORECASE).strip()
                             pdf_data = build_pdf_bytes(pdf_title, body_for_pdf)
 
+                        # Extract PPTX
                         pptx_data = None
                         json_match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", reply, re.DOTALL)
                         if json_match:
@@ -554,16 +571,22 @@ if st.session_state.configured_app:
                             except Exception:
                                 pass
 
+                        # Extract Plot Code
                         plot_match = re.search(r"```(?:python)?\s*(.*?fig\s*=.*?)\s*```", reply, re.DOTALL)
                         plot_code = plot_match.group(1) if plot_match else None
 
-                        cleaned_text = re.sub(r"IMAGE_PROMPT:\s*.+", "", reply, flags=re.IGNORECASE)
+                        # Clean conversational text
+                        cleaned_text = re.sub(r"VIDEO_PROMPT:\s*.+", "", reply, flags=re.IGNORECASE)
+                        cleaned_text = re.sub(r"IMAGE_PROMPT:\s*.+", "", cleaned_text, flags=re.IGNORECASE)
                         cleaned_text = re.sub(r"GENERATE_PDF:\s*.+", "", cleaned_text, flags=re.IGNORECASE)
                         cleaned_text = re.sub(r"```(?:json)?\s*\{.*?\}\s*```", "", cleaned_text, flags=re.DOTALL)
                         cleaned_text = re.sub(r"```(?:python)?\s*.*?fig\s*=.*?\s*```", "", cleaned_text, flags=re.DOTALL).strip()
 
                         if cleaned_text:
                             st.markdown(cleaned_text)
+
+                        if video_url:
+                            st.video(video_url)
 
                         if image_url:
                             st.image(image_url, caption="Generated via Mega Rayquaza Visual Core", use_container_width=True)
@@ -600,6 +623,7 @@ if st.session_state.configured_app:
                         st.session_state.chat_history.append({
                             "role": "assistant",
                             "text_content": cleaned_text,
+                            "video_url": video_url,
                             "image_url": image_url,
                             "plot_code": plot_code,
                             "pdf_data": pdf_data,
@@ -610,7 +634,7 @@ if st.session_state.configured_app:
     # TAB 3: STANDALONE EXPORT CODE
     with tab3:
         st.subheader("Generated Python Code")
-        st.caption("Complete code compiled across all 23 specialist brains:")
+        st.caption("Complete code compiled across all 24 specialist brains:")
         st.code(app_info["source_code"], language="python")
         st.download_button(
             "Download Source Code (.py)",
