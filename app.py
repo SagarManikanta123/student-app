@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import requests
 import re
 import base64
@@ -6,10 +7,10 @@ import urllib.parse
 import numpy as np
 import matplotlib.pyplot as plt
 
-st.set_page_config(page_title="20-Brain Mega-Council Factory", layout="wide")
+st.set_page_config(page_title="Universal AI App Factory", layout="wide")
 
 st.title("Universal AI Factory (20-Specialist Council)")
-st.caption("Active Image Generation, Matplotlib Plotting & Multimodal Hardware Inspection")
+st.caption("Active Voice Dictation, Real Image Generation, Matplotlib Plotting & Multimodal Inspection")
 
 def sanitize_text(text):
     if not text:
@@ -109,10 +110,12 @@ if "persisted_image_b64" not in st.session_state:
     st.session_state.persisted_image_b64 = None
 if "persisted_image_mime" not in st.session_state:
     st.session_state.persisted_image_mime = None
+if "voice_transcript" not in st.session_state:
+    st.session_state.voice_transcript = ""
 
 user_request = st.text_area(
     "What kind of AI tool do you want to create?",
-    placeholder="e.g. Build an AI that can generate real images, draw mathematical graphs, inspect hardware photos, and explain concepts clearly."
+    placeholder="e.g. Build an AI assistant with voice input, real image generation, circuit/math explanations, and graph plotting."
 )
 
 if st.button("Deploy 20-Brain Mega-Council", type="primary"):
@@ -127,7 +130,7 @@ if st.button("Deploy 20-Brain Mega-Council", type="primary"):
             council_synthesis_prompt = (
                 f"You are the Supreme Council Moderator. Build the operational prompt for: '{user_request}'.\n\n"
                 "Unify the principles of all 20 specialist brains:\n"
-                "1. Hardware & Electronics Specialist (Circuits, Microcontrollers, Pinouts)\n"
+                "1. Hardware & Electronics Specialist (Circuits, Arduino, Microcontrollers, Pinouts)\n"
                 "2. Vision & Diagram Inspector (OCR, Image Parsing, Visual Inspection)\n"
                 "3. Pure & Applied Mathematics Brain (Algebra, Calculus, Step-by-Step Proofs)\n"
                 "4. Theoretical & Classical Physics Engine (Kinematics, Optics, Forces)\n"
@@ -139,17 +142,17 @@ if st.button("Deploy 20-Brain Mega-Council", type="primary"):
                 "10. Statistical Modeling Brain\n"
                 "11. Dynamic Visualizer & Graph Plotter\n"
                 "12. Image Generation Prompt Specialist\n"
-                "13. Creative Analogy Architect\n"
-                "14. Pedagogical Manners Brain\n"
-                "15. History & Civics Brain\n"
-                "16. Linguistics Specialist\n"
-                "17. Edge Case & Failure Analyst\n"
-                "18. Code Verification Brain\n"
-                "19. Universal Cross-Disciplinary Tutor\n"
+                "13. Voice & Audio Interaction Specialist\n"
+                "14. Creative Analogy Architect\n"
+                "15. Pedagogical Manners Brain\n"
+                "16. History & Civics Brain\n"
+                "17. Linguistics Specialist\n"
+                "18. Edge Case & Failure Analyst\n"
+                "19. Code Verification Brain\n"
                 "20. Council Moderator\n\n"
                 "OUTPUT DIRECTIVES:\n"
-                "- If the user asks to GENERATE AN IMAGE, DRAW A PICTURE, or CREATE ART: Describe what is created, then output a single line with `IMAGE_PROMPT: <descriptive prompt for diffusion model>`.\n"
-                "- If the user asks to DRAW A MATHEMATICAL GRAPH: Explain the math, then provide executable plotting code using matplotlib.pyplot as plt and numpy as np defining fig inside a python code block.\n"
+                "- If the user asks to GENERATE AN IMAGE, DRAW A PICTURE, or CREATE ART: Describe what is created, then on the very last line output: `IMAGE_PROMPT: <vivid visual description in English>`\n"
+                "- If the user asks to DRAW A MATHEMATICAL GRAPH: Explain the math, then provide executable plotting code with matplotlib.pyplot as plt and numpy as np defining fig inside a python code block.\n"
                 "- Never dump raw code unless the user explicitly requested code."
             )
             
@@ -193,18 +196,105 @@ if st.session_state.configured_app:
         st.subheader("Autonomous Mega-Council Active")
         st.caption(f"Council Objective: {app_info['goal']}")
 
-        st.markdown("#### Image & Media Input")
-        uploaded_file = st.file_uploader(
-            "Upload an image, diagram, circuit photo, or document:",
-            type=["png", "jpg", "jpeg"],
-            key="mega_20_file_input"
-        )
+        # Upload & Multimodal Input
+        st.markdown("#### Media & Voice Controls")
+        col_up, col_mic = st.columns([2, 1])
 
-        if uploaded_file is not None:
-            bytes_data = uploaded_file.getvalue()
-            if len(bytes_data) > 0:
-                st.session_state.persisted_image_b64 = base64.b64encode(bytes_data).decode("utf-8")
-                st.session_state.persisted_image_mime = uploaded_file.type
+        with col_up:
+            uploaded_file = st.file_uploader(
+                "Upload photo, diagram, circuit, or document:",
+                type=["png", "jpg", "jpeg"],
+                key="mega_20_file_input"
+            )
+            if uploaded_file is not None:
+                bytes_data = uploaded_file.getvalue()
+                if len(bytes_data) > 0:
+                    st.session_state.persisted_image_b64 = base64.b64encode(bytes_data).decode("utf-8")
+                    st.session_state.persisted_image_mime = uploaded_file.type
+
+        with col_mic:
+            st.write("🎙️ **Live Microphone Speech-to-Text**")
+            # In-browser speech recognition module
+            speech_js = """
+            <div style="font-family: sans-serif; display: flex; flex-direction: column; gap: 8px;">
+                <button id="recordBtn" style="
+                    background-color: #ff4b4b;
+                    color: white;
+                    border: none;
+                    padding: 8px 16px;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    font-weight: bold;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;">
+                    🎤 Start Speaking
+                </button>
+                <div id="transcriptBox" style="
+                    font-size: 13px;
+                    color: #d1d5db;
+                    background: #1f2937;
+                    padding: 8px;
+                    border-radius: 6px;
+                    min-height: 48px;
+                    border: 1px solid #374151;">Click 'Start Speaking' and talk...</div>
+            </div>
+
+            <script>
+            const btn = document.getElementById('recordBtn');
+            const box = document.getElementById('transcriptBox');
+            let recognizing = false;
+            let recognition;
+
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                recognition.continuous = false;
+                recognition.interimResults = true;
+
+                recognition.onstart = function() {
+                    recognizing = true;
+                    btn.innerText = "🛑 Stop & Copy";
+                    btn.style.backgroundColor = "#10b981";
+                    box.innerText = "Listening...";
+                };
+
+                recognition.onresult = function(event) {
+                    let text = '';
+                    for (let i = event.resultIndex; i < event.results.length; ++i) {
+                        text += event.results[i][0].transcript;
+                    }
+                    box.innerText = text;
+                    navigator.clipboard.writeText(text);
+                };
+
+                recognition.onerror = function(event) {
+                    box.innerText = "Mic error: " + event.error;
+                    recognizing = false;
+                    btn.innerText = "🎤 Start Speaking";
+                    btn.style.backgroundColor = "#ff4b4b";
+                };
+
+                recognition.onend = function() {
+                    recognizing = false;
+                    btn.innerText = "🎤 Start Speaking (Copied to Clipboard!)";
+                    btn.style.backgroundColor = "#ff4b4b";
+                };
+
+                btn.onclick = function() {
+                    if (recognizing) {
+                        recognition.stop();
+                    } else {
+                        recognition.start();
+                    }
+                };
+            } else {
+                box.innerText = "Web Speech API not supported in this browser. Please use Chrome/Edge.";
+                btn.disabled = true;
+            }
+            </script>
+            """
+            components.html(speech_js, height=130)
 
         if st.session_state.get("persisted_image_b64"):
             st.success("Image loaded into Vision Brain memory.")
@@ -227,11 +317,9 @@ if st.session_state.configured_app:
                 if msg.get("text_content"):
                     st.markdown(msg["text_content"])
                 
-                # Render Generated Diffusion Image
                 if msg.get("image_url"):
                     st.image(msg["image_url"], caption="AI Generated Image", use_container_width=True)
                 
-                # Render Matplotlib Graph
                 if msg.get("plot_code"):
                     try:
                         exec_env = {"np": np, "plt": plt}
@@ -242,7 +330,8 @@ if st.session_state.configured_app:
                     except Exception:
                         pass
 
-        user_input = st.chat_input("Ask a question, generate an image (e.g. 'generate an image of a galaxy'), or plot a graph...")
+        # Chat Input Bar
+        user_input = st.chat_input("Speak via mic above (it auto-copies), paste or type your prompt here...")
         if user_input:
             st.session_state.chat_history.append({"role": "user", "text_content": user_input})
             with st.chat_message("user"):
@@ -286,7 +375,6 @@ if st.session_state.configured_app:
                         reply = call_groq(messages, model=PRIMARY_TEXT_MODEL, max_tok=1400, temp=0.4)
 
                     if reply:
-                        # Check for Image Generation prompt tag
                         image_url = None
                         img_prompt_match = re.search(r"IMAGE_PROMPT:\s*(.+)", reply, re.IGNORECASE)
                         if img_prompt_match:
@@ -295,22 +383,18 @@ if st.session_state.configured_app:
                             encoded_prompt = urllib.parse.quote(clean_prompt[:250])
                             image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=768&height=512&nologo=true"
 
-                        # Check for Python Plotting code
                         plot_match = re.search(r"```(?:python)?\s*(.*?fig\s*=.*?)\s*```", reply, re.DOTALL)
                         plot_code = plot_match.group(1) if plot_match else None
 
-                        # Clean conversational text
                         cleaned_text = re.sub(r"IMAGE_PROMPT:\s*.+", "", reply, flags=re.IGNORECASE)
                         cleaned_text = re.sub(r"```(?:python)?\s*.*?fig\s*=.*?\s*```", "", cleaned_text, flags=re.DOTALL).strip()
 
                         if cleaned_text:
                             st.markdown(cleaned_text)
 
-                        # Display Real Generated Image
                         if image_url:
                             st.image(image_url, caption="AI Generated Image", use_container_width=True)
 
-                        # Display Rendered Matplotlib Graph
                         if plot_code:
                             try:
                                 exec_env = {"np": np, "plt": plt}
