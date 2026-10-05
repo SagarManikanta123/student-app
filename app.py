@@ -112,6 +112,15 @@ def build_pptx_bytes(presentation_data):
     prs.save(buf)
     return buf.getvalue()
 
+def fetch_media_bytes(url, timeout=45):
+    try:
+        resp = requests.get(url, timeout=timeout)
+        if resp.status_code == 200 and len(resp.content) > 1000:
+            return resp.content
+    except Exception:
+        pass
+    return None
+
 # Read Secrets
 api_key = ""
 if "GROQ_API_KEY" in st.secrets:
@@ -259,13 +268,12 @@ if "persisted_image_b64" not in st.session_state:
 if "persisted_image_mime" not in st.session_state:
     st.session_state.persisted_image_mime = None
 
-# Custom Editable AI Traits State
 if "ai_creativity" not in st.session_state:
     st.session_state.ai_creativity = 0.5
 if "ai_max_tokens" not in st.session_state:
     st.session_state.ai_max_tokens = 1400
 if "ai_custom_trait" not in st.session_state:
-    st.session_state.ai_custom_trait = "Articulate, polite, visually rich with video/image/audio capabilities, and rigorous."
+    st.session_state.ai_custom_trait = "Articulate, polite, visually rich with video/image capabilities, and rigorous."
 
 # AI FACTORY CREATOR SECTION WITH VOICE COMMAND
 st.subheader("1. AI Factory Creator (Voice or Text)")
@@ -404,7 +412,7 @@ if st.session_state.configured_app:
         st.subheader("2. Your Active Custom AI")
         st.caption(f"Council Objective: {app_info['goal']} | Inner Core: Mega Rayquaza Activated")
 
-        st.markdown("#### 🎙️ Media & Voice Interaction")
+        st.markdown("#### 🎙️️ Media & Voice Interaction")
         col_up, col_chat_mic = st.columns([2, 1])
 
         with col_up:
@@ -444,8 +452,10 @@ if st.session_state.configured_app:
                 if msg.get("text_content"):
                     st.markdown(msg["text_content"])
                 
-                # Render Generated Video
-                if msg.get("video_url"):
+                # Render Generated Video from bytes
+                if msg.get("video_bytes"):
+                    st.video(msg["video_bytes"])
+                elif msg.get("video_url"):
                     st.video(msg["video_url"])
                 
                 # Render Generated Image
@@ -533,16 +543,19 @@ if st.session_state.configured_app:
                         reply = call_groq(messages, model=PRIMARY_TEXT_MODEL, max_tok=current_tokens, temp=current_temp)
 
                     if reply:
-                        # Extract Video Generation
                         video_url = None
+                        video_bytes = None
                         vid_prompt_match = re.search(r"VIDEO_PROMPT:\s*(.+)", reply, re.IGNORECASE)
                         if vid_prompt_match:
                             raw_vid_prompt = vid_prompt_match.group(1).strip()
                             clean_vid_prompt = re.sub(r"[^\w\s,.-]", "", raw_vid_prompt)
                             encoded_vid = urllib.parse.quote(clean_vid_prompt[:250])
                             video_url = f"https://image.pollinations.ai/prompt/{encoded_vid}?model=video&width=512&height=512"
+                            
+                            # Download video bytes with a dedicated status spinner
+                            with st.spinner("Compiling and downloading video frames from Delta Stream..."):
+                                video_bytes = fetch_media_bytes(video_url, timeout=45)
 
-                        # Extract Image Generation
                         image_url = None
                         img_prompt_match = re.search(r"IMAGE_PROMPT:\s*(.+)", reply, re.IGNORECASE)
                         if img_prompt_match and not video_url:
@@ -551,7 +564,6 @@ if st.session_state.configured_app:
                             encoded_prompt = urllib.parse.quote(clean_prompt[:250])
                             image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=768&height=512&nologo=true"
 
-                        # Extract PDF
                         pdf_data = None
                         pdf_title = "Document"
                         pdf_match = re.search(r"GENERATE_PDF:\s*(.+)", reply, re.IGNORECASE)
@@ -560,7 +572,6 @@ if st.session_state.configured_app:
                             body_for_pdf = re.sub(r"GENERATE_PDF:\s*.+", "", reply, flags=re.IGNORECASE).strip()
                             pdf_data = build_pdf_bytes(pdf_title, body_for_pdf)
 
-                        # Extract PPTX
                         pptx_data = None
                         json_match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", reply, re.DOTALL)
                         if json_match:
@@ -571,11 +582,9 @@ if st.session_state.configured_app:
                             except Exception:
                                 pass
 
-                        # Extract Plot Code
                         plot_match = re.search(r"```(?:python)?\s*(.*?fig\s*=.*?)\s*```", reply, re.DOTALL)
                         plot_code = plot_match.group(1) if plot_match else None
 
-                        # Clean conversational text
                         cleaned_text = re.sub(r"VIDEO_PROMPT:\s*.+", "", reply, flags=re.IGNORECASE)
                         cleaned_text = re.sub(r"IMAGE_PROMPT:\s*.+", "", cleaned_text, flags=re.IGNORECASE)
                         cleaned_text = re.sub(r"GENERATE_PDF:\s*.+", "", cleaned_text, flags=re.IGNORECASE)
@@ -585,7 +594,10 @@ if st.session_state.configured_app:
                         if cleaned_text:
                             st.markdown(cleaned_text)
 
-                        if video_url:
+                        if video_bytes:
+                            st.video(video_bytes)
+                        elif video_url:
+                            # Fallback if download timed out
                             st.video(video_url)
 
                         if image_url:
@@ -623,6 +635,7 @@ if st.session_state.configured_app:
                         st.session_state.chat_history.append({
                             "role": "assistant",
                             "text_content": cleaned_text,
+                            "video_bytes": video_bytes,
                             "video_url": video_url,
                             "image_url": image_url,
                             "plot_code": plot_code,
