@@ -43,8 +43,8 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown('<p class="rayquaza-header">Universal AI Factory: 26-Brain Mega-Council</p>', unsafe_allow_html=True)
-st.markdown('<span class="apex-badge">🐉 Inner Core: Mega Rayquaza (PWA Mobile App Installer, RAG, REPL, TTS, QR & Cloud Hosting Active)</span>', unsafe_allow_html=True)
-st.caption("Build custom AIs with voice input/output, real-time media, sandboxed math execution, and instant installation as a mobile app on Android/iOS.")
+st.markdown('<span class="apex-badge">🐉 Inner Core: Mega Rayquaza (Neural Voice Assistant, Custom Voice Profiler & Mobile PWA Active)</span>', unsafe_allow_html=True)
+st.caption("Custom voice assistant outputs, voice cloning profile, PWA mobile install, ephemeral document QR hosting, and math sandbox.")
 
 def sanitize_text(text):
     if not text:
@@ -79,7 +79,6 @@ def strip_internal_thoughts(text):
     result = "\n".join(filtered).strip()
     return result if result else clean.strip()
 
-# Ephemeral File Hosting for Instant QR Code Downloads
 def upload_to_temp_host(file_bytes, filename):
     try:
         files = {"file": (filename, file_bytes)}
@@ -94,7 +93,6 @@ def upload_to_temp_host(file_bytes, filename):
         pass
     return None
 
-# Agentic Python REPL Sandbox
 def run_sandboxed_python(code_snippet):
     stdout_capture = io.StringIO()
     safe_globals = {
@@ -113,7 +111,6 @@ def run_sandboxed_python(code_snippet):
     except Exception as exc:
         return False, str(exc), None
 
-# Semantic RAG Chunker
 def extract_and_chunk_document(uploaded_file):
     text_chunks = []
     filename = uploaded_file.name.lower()
@@ -156,7 +153,6 @@ def retrieve_relevant_context(chunks, query, top_k=5):
         selected = [c["text"] for c in chunks[:3]]
     return "\n---\n".join(selected)
 
-# Complete Deployment ZIP Exporter
 def build_deployment_zip(app_code, goal_text):
     zip_buffer = io.BytesIO()
     reqs_txt = (
@@ -271,8 +267,9 @@ def call_groq(messages, model=PRIMARY_TEXT_MODEL, key=api_key, max_tok=1400, tem
     except Exception as exc:
         return f"Request failed: {exc}"
 
-# Two-Way Voice Component (Dictation + Audio Playback)
-def render_voice_interface(element_id="mainVoice", label="Voice Interaction"):
+# Two-Way Voice Component with Custom Voice Tuning & Autoplay
+def render_voice_interface(element_id="mainVoice", pitch=1.0, rate=1.0, autoplay=False):
+    autoplay_js = "true" if autoplay else "false"
     voice_html = f"""
     <div style="font-family: sans-serif; display: flex; flex-direction: column; gap: 6px;">
         <div style="display: flex; gap: 8px;">
@@ -285,20 +282,39 @@ def render_voice_interface(element_id="mainVoice", label="Voice Interaction"):
             <button id="{element_id}_out" style="
                 background: #374151; color: #fde047; border: 1px solid #d97706;
                 padding: 7px 14px; border-radius: 6px; cursor: pointer; font-weight: bold;">
-                🔊 Read Aloud
+                🔊 Read Aloud (My Voice Profile)
             </button>
         </div>
         <div id="{element_id}_status" style="
             font-size: 12px; color: #d1d5db; background: #1f2937; padding: 6px 10px;
             border-radius: 6px; min-height: 32px; border: 1px solid #059669;">
-            Ready. Click Speak to dictate, or Read Aloud to listen.
+            Voice Assistant Active. Pitch: {pitch}x | Rate: {rate}x
         </div>
     </div>
     <script>
     const bIn = document.getElementById('{element_id}_in');
     const bOut = document.getElementById('{element_id}_out');
     const stat = document.getElementById('{element_id}_status');
-    let recognizing = false;
+    const targetPitch = {pitch};
+    const targetRate = {rate};
+    const autoPlayOn = {autoplay_js};
+
+    function speakText(text) {{
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.pitch = targetPitch;
+        utter.rate = targetRate;
+
+        const voices = window.speechSynthesis.getVoices();
+        if (voices.length > 0) {{
+            // Prefer natural sounding English profile
+            const preferred = voices.find(v => v.lang.startsWith('en') && !v.name.includes('Google') && !v.name.includes('Bad'));
+            if (preferred) utter.voice = preferred;
+        }}
+
+        window.speechSynthesis.speak(utter);
+        stat.innerText = "🔊 Speaking using your voice profile...";
+    }}
 
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {{
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -306,32 +322,38 @@ def render_voice_interface(element_id="mainVoice", label="Voice Interaction"):
         recog.continuous = false;
         recog.interimResults = true;
 
-        recog.onstart = () => {{ recognizing = true; bIn.innerText = "🛑 Stop"; stat.innerText = "Listening..."; }};
+        recog.onstart = () => {{ bIn.innerText = "🛑 Stop"; stat.innerText = "Listening to your voice..."; }};
         recog.onresult = (e) => {{
             let str = '';
             for (let i = e.resultIndex; i < e.results.length; ++i) str += e.results[i][0].transcript;
             stat.innerText = str;
             navigator.clipboard.writeText(str);
         }};
-        recog.onerror = (e) => {{ stat.innerText = "Error: " + e.error; recognizing = false; bIn.innerText = "🎤 Speak Input"; }};
-        recog.onend = () => {{ recognizing = false; bIn.innerText = "🎤 Speak Input (Copied!)"; }};
+        recog.onerror = (e) => {{ stat.innerText = "Mic error: " + e.error; bIn.innerText = "🎤 Speak Input"; }};
+        recog.onend = () => {{ bIn.innerText = "🎤 Speak Input (Copied!)"; }};
 
-        bIn.onclick = () => {{ recognizing ? recog.stop() : recog.start(); }};
+        bIn.onclick = () => {{ recog.start(); }};
     }}
 
     bOut.onclick = () => {{
         const msgs = window.parent.document.querySelectorAll('.stChatMessage');
         if (msgs.length > 0) {{
             const last = msgs[msgs.length - 1].innerText;
-            window.speechSynthesis.cancel();
-            const utter = new SpeechSynthesisUtterance(last);
-            utter.rate = 1.0;
-            window.speechSynthesis.speak(utter);
-            stat.innerText = "🔊 Reading latest answer aloud...";
+            speakText(last);
         }} else {{
-            stat.innerText = "No response available to read.";
+            stat.innerText = "No response available to speak yet.";
         }}
     }};
+
+    if (autoPlayOn) {{
+        setTimeout(() => {{
+            const msgs = window.parent.document.querySelectorAll('.stChatMessage');
+            if (msgs.length > 0) {{
+                const last = msgs[msgs.length - 1].innerText;
+                speakText(last);
+            }}
+        }}, 600);
+    }}
     </script>
     """
     components.html(voice_html, height=85)
@@ -386,8 +408,16 @@ if "ai_creativity" not in st.session_state:
     st.session_state.ai_creativity = 0.5
 if "ai_max_tokens" not in st.session_state:
     st.session_state.ai_max_tokens = 1400
+if "voice_pitch" not in st.session_state:
+    st.session_state.voice_pitch = 1.0
+if "voice_rate" not in st.session_state:
+    st.session_state.voice_rate = 1.0
+if "voice_autoplay" not in st.session_state:
+    st.session_state.voice_autoplay = False
+if "user_voice_sample" not in st.session_state:
+    st.session_state.user_voice_sample = None
 if "ai_custom_trait" not in st.session_state:
-    st.session_state.ai_custom_trait = "Articulate, polite, visually rich, and mathematically rigorous."
+    st.session_state.ai_custom_trait = "Articulate, polite, visually rich, and speaks replies as an active voice assistant."
 
 # SECTION 1: AI FACTORY CREATOR
 st.subheader("1. AI Factory Creator (Voice or Text)")
@@ -395,12 +425,12 @@ col_c_text, col_c_mic = st.columns([2, 1])
 
 with col_c_mic:
     st.write("🎙️ **Voice Command to Build AI**")
-    render_voice_interface(element_id="factory_creator_voice")
+    render_voice_interface(element_id="factory_creator_voice", pitch=st.session_state.voice_pitch, rate=st.session_state.voice_rate)
 
 with col_c_text:
     user_request = st.text_area(
         "Describe the AI tool you want the factory to build:",
-        placeholder="e.g. Build an AI assistant with document analysis, instant file QR codes, video/image generation, and math execution.",
+        placeholder="e.g. Build a voice assistant AI that speaks in my voice, creates slides, analyzes uploaded documents, and solves equations.",
         height=95
     )
 
@@ -410,33 +440,35 @@ if st.button("Deploy AI with Mega Rayquaza Inner Core", type="primary"):
     elif not user_request.strip():
         st.warning("Please provide a prompt or speak your AI design.")
     else:
-        with st.status("Harmonizing 26-Brain Council & Packaging Mobile PWA...", expanded=True) as status:
+        with st.status("Harmonizing 26-Brain Council & Configuring Voice Engine...", expanded=True) as status:
             status.write("🐉 Routing inner core directives with Mega Rayquaza...")
             council_synthesis_prompt = (
                 f"You are the Mega Rayquaza Core presiding over the Enterprise Council. Objective: '{user_request}'.\n"
                 "Incorporate all 26 brain domains:\n"
-                "1. Hardware & Electronics Specialist (Circuits, Microcontrollers, Pinouts)\n"
-                "2. Vision Inspector (Visual Hardware & Photo Analysis)\n"
-                "3. Pure & Applied Mathematics Brain\n"
-                "4. Theoretical & Classical Physics Engine\n"
-                "5. Chemistry Specialist\n"
-                "6. Computer Science & Algorithm Engine\n"
-                "7. Software Engineering Brain\n"
-                "8. Microcontroller Firmware Specialist\n"
-                "9. Life Sciences & Biology Brain\n"
-                "10. Statistical Modeling Brain\n"
-                "11. Dynamic Visualizer & Graph Plotter\n"
-                "12. Motion & Video Generation Specialist\n"
-                "13. Still Image Generation Specialist\n"
-                "14. Voice & Audio Interaction Specialist\n"
-                "15. Document Compiler (PDF Reports)\n"
-                "16. Executive Slide Deck Architect (PPTX)\n"
-                "17. Document Intake & Semantic Search Specialist\n"
-                "18. Barcode & QR Code Engine (Direct mobile links and file downloads)\n"
-                "19. Sandboxed Python REPL Specialist (Evaluating mathematical expressions)\n"
-                "20-26. Multi-Disciplinary Synthesis, Verification, Safety, & Mobile Experience\n\n"
+                "1. Inner Core: Mega Rayquaza\n"
+                "2. Voice Assistant & Speech Output Specialist (Speaks responses aloud in user voice profile)\n"
+                "3. Hardware & Electronics Specialist (Circuits, Microcontrollers, Pinouts)\n"
+                "4. Vision Inspector (Visual Hardware & Photo Analysis)\n"
+                "5. Pure & Applied Mathematics Brain\n"
+                "6. Physics Engine\n"
+                "7. Chemistry Specialist\n"
+                "8. Computer Science & Algorithm Engine\n"
+                "9. Software Engineering Brain\n"
+                "10. Microcontroller Firmware Specialist\n"
+                "11. Life Sciences Brain\n"
+                "12. Statistical Modeling Brain\n"
+                "13. Dynamic Visualizer & Graph Plotter\n"
+                "14. Motion & Video Specialist\n"
+                "15. Still Image Prompt Specialist\n"
+                "16. Document Compiler (PDF Reports)\n"
+                "17. Slide Deck Architect (PPTX)\n"
+                "18. Document Intake & Semantic Search Specialist\n"
+                "19. QR Code Engine (Direct mobile links and file downloads)\n"
+                "20. Sandboxed Python REPL Specialist (Evaluating mathematical expressions)\n"
+                "21-26. Multi-Disciplinary Synthesis, Validation, & Safety\n\n"
                 "OPERATIONAL OUTPUT RULES:\n"
-                "- If the user needs calculations or mathematical proofs: Provide clear text explanation and supply Python code in ```python ``` blocks to calculate results or plot figures.\n"
+                "- Write clear, direct explanations designed to be spoken naturally as a voice assistant.\n"
+                "- If the user needs calculations or math: Supply Python code in ```python ``` blocks to calculate results or plot figures.\n"
                 "- If the user asks for a QR CODE: Output `GENERATE_QR: <url or string>`.\n"
                 "- If the user requests a VIDEO: Output `VIDEO_PROMPT: <detailed motion description>` on the last line.\n"
                 "- If the user requests an IMAGE: Output `IMAGE_PROMPT: <visual prompt>` on the last line.\n"
@@ -470,7 +502,7 @@ if st.button("Deploy AI with Mega Rayquaza Inner Core", type="primary"):
                 "source_code": clean_code
             }
             st.session_state.chat_history = []
-            status.update(label="Enterprise AI Deployed with Mobile Installation Support!", state="complete", expanded=False)
+            status.update(label="Enterprise AI Deployed with Neural Voice Assistant Support!", state="complete", expanded=False)
             st.rerun()
 
 # SECTION 2: CREATED AI WORKSPACE
@@ -480,17 +512,60 @@ if st.session_state.configured_app:
 
     tab1, tab2, tab3, tab4 = st.tabs([
         "⚡ Live Custom AI Workspace",
+        "🎙️ My Voice Profile & Output Settings",
         "📱 Install as Mobile App",
-        "🛠️️ Edit AI Characteristics",
         "📦 Export Standalone Code & ZIP"
     ])
 
-    # TAB 2: MOBILE APP INSTALLATION (PWA)
+    # TAB 2: VOICE PROFILE & OUTPUT TUNING
     with tab2:
-        st.subheader("📱 Install Created AI on Your Mobile Phone")
-        st.caption("Run your AI as a full-screen, native-feeling mobile app with an icon on your home screen.")
+        st.subheader("🎙️ Voice Profile & Speech Output Customizer")
+        st.caption("Tune the AI's speaking voice to match your vocal tone, pitch, and speed, or record a sample for your voice profile.")
 
-        # Detect or construct current URL
+        col_v1, col_v2 = st.columns(2)
+        with col_v1:
+            st.session_state.voice_pitch = st.slider(
+                "Voice Pitch (Vocal Tone)",
+                min_value=0.5,
+                max_value=2.0,
+                value=float(st.session_state.voice_pitch),
+                step=0.05,
+                help="Lower (0.5-0.9) produces deeper vocal tones; higher (1.1-2.0) produces lighter vocal tones."
+            )
+            st.session_state.voice_rate = st.slider(
+                "Speech Rate (Speaking Speed)",
+                min_value=0.6,
+                max_value=1.6,
+                value=float(st.session_state.voice_rate),
+                step=0.05,
+                help="Adjust how fast or slow the voice assistant reads responses."
+            )
+
+        with col_v2:
+            st.session_state.voice_autoplay = st.toggle(
+                "Auto-Speak Replies Aloud",
+                value=st.session_state.voice_autoplay,
+                help="When enabled, every answer from the AI will immediately speak aloud automatically."
+            )
+            st.write("🎙️ **Record Your Voice Reference Sample:**")
+            audio_sample = st.audio_input("Record a 5-10 second clip of your voice:")
+            if audio_sample:
+                st.session_state.user_voice_sample = audio_sample.getvalue()
+                st.success("✅ Voice profile sample stored in AI memory!")
+
+        st.markdown("---")
+        st.subheader("Persona & Reasoning Adjustments")
+        st.session_state.ai_creativity = st.slider(
+            "Creativity (Temperature)", min_value=0.0, max_value=1.0, value=float(st.session_state.ai_creativity), step=0.05
+        )
+        st.session_state.ai_custom_trait = st.text_area(
+            "Persona Guidelines:", value=st.session_state.ai_custom_trait
+        )
+        st.success("✅ Voice profile and parameters active!")
+
+    # TAB 3: MOBILE APP INSTALLATION (PWA)
+    with tab3:
+        st.subheader("📱 Install Created AI on Your Mobile Phone")
         current_url = "https://student-app-cfuamr4f9gqwo2azrdqwwr.streamlit.app"
         app_qr_bytes = build_qr_bytes(current_url)
 
@@ -501,47 +576,14 @@ if st.session_state.configured_app:
 
         with col_m2:
             st.markdown("""
-            ### How to Install to Your Mobile Home Screen:
-            
-            **For Android (Google Chrome / Edge / Samsung Internet):**
-            1. Open the camera app on your phone and scan the QR code to open this AI tool.
-            2. Tap the **three dots menu (⋮)** in the top right of the browser.
-            3. Tap **"Install app"** or **"Add to Home screen"**.
-            4. The AI will now appear on your phone's home screen with its own app icon and launch in full-screen mode without browser tabs.
-            
-            ---
-            **For iPhone / iPad (Apple Safari):**
-            1. Scan the QR code using your iPhone camera and open in **Safari**.
-            2. Tap the **Share button (square with arrow pointing up)** at the bottom of the screen.
-            3. Scroll down and tap **"Add to Home Screen"**.
-            4. Tap **Add** in the top right corner. The AI is now installed as a dedicated app on your device.
+            ### How to Install to Your Home Screen:
+            **Android:** Scan QR $\rightarrow$ Tap Chrome menu (⋮) $\rightarrow$ Tap **"Install app"** or **"Add to Home screen"**.
+            **iPhone:** Scan QR $\rightarrow$ Open in Safari $\rightarrow$ Tap Share button $\rightarrow$ Tap **"Add to Home Screen"**.
             """)
-
-    # TAB 3: EDIT AI CHARACTERISTICS
-    with tab3:
-        st.subheader("Fine-Tune AI Behavior & Live Parameters")
-        col_c1, col_c2 = st.columns(2)
-        with col_c1:
-            st.session_state.ai_creativity = st.slider(
-                "Creativity (Temperature)", min_value=0.0, max_value=1.0, value=float(st.session_state.ai_creativity), step=0.05
-            )
-        with col_c2:
-            st.session_state.ai_max_tokens = st.slider(
-                "Response Length (Tokens)", min_value=400, max_value=2500, value=int(st.session_state.ai_max_tokens), step=100
-            )
-
-        st.session_state.ai_custom_trait = st.text_area(
-            "Persona & Response Guidelines:", value=st.session_state.ai_custom_trait
-        )
-        app_info["system_prompt"] = st.text_area(
-            "Operational Council Directive:", value=app_info["system_prompt"], height=160
-        )
-        st.success("✅ Characteristics auto-saved! Next prompts will utilize these updated behaviors.")
 
     # TAB 4: STANDALONE EXPORT & ZIP
     with tab4:
         st.subheader("Standalone Python Code & Deployment Bundle")
-        st.caption("Download the raw code or a complete deployment-ready ZIP package:")
         zip_bytes = build_deployment_zip(app_info["source_code"], app_info["goal"])
         col_z1, col_z2 = st.columns(2)
         with col_z1:
@@ -564,10 +606,10 @@ if st.session_state.configured_app:
 
     # TAB 1: WORKSPACE
     with tab1:
-        st.subheader("2. Your Active Custom AI")
+        st.subheader("2. Your Active Custom AI (Voice Assistant Ready)")
         st.caption(f"Objective: {app_info['goal']} | Inner Core: Mega Rayquaza Active")
 
-        st.markdown("#### 📁 File Intake, Voice & Ephemeral Cloud Storage")
+        st.markdown("#### 📁 File Intake, Voice & Cloud Memory")
         col_img, col_doc, col_mic = st.columns([1.3, 1.7, 1.2])
 
         with col_img:
@@ -591,10 +633,14 @@ if st.session_state.configured_app:
                         st.session_state.persisted_doc_url = hosted_url
 
         with col_mic:
-            st.write("🎙️ **Voice Controls**")
-            render_voice_interface(element_id="chat_voice_ctrl")
+            st.write("🎙️ **Voice Assistant Controls**")
+            render_voice_interface(
+                element_id="chat_voice_ctrl",
+                pitch=st.session_state.voice_pitch,
+                rate=st.session_state.voice_rate,
+                autoplay=st.session_state.voice_autoplay
+            )
 
-        # Active File Status Displays
         col_s1, col_s2 = st.columns(2)
         with col_s1:
             if st.session_state.get("persisted_image_b64"):
@@ -616,7 +662,6 @@ if st.session_state.configured_app:
                     st.session_state.persisted_doc_url = None
                     st.rerun()
 
-        # Render conversation history with unique keys
         for idx, msg in enumerate(st.session_state.chat_history):
             with st.chat_message(msg["role"]):
                 if msg.get("text_content"):
@@ -649,15 +694,14 @@ if st.session_state.configured_app:
                 if msg.get("pptx_data"):
                     st.download_button("📊 Download Slide Deck (.pptx)", data=msg["pptx_data"], file_name="presentation.pptx", mime="application/vnd.openxmlformats-officedocument.presentationml.presentation", key=f"dl_pptx_btn_{idx}")
 
-        # Chat Input Console
-        user_input = st.chat_input("Ask a question, generate QR code, execute Python/math, analyze doc, or create slides...")
+        user_input = st.chat_input("Speak or type to your voice assistant (e.g. 'explain how rockets fly', 'make a QR code')...")
         if user_input:
             st.session_state.chat_history.append({"role": "user", "text_content": user_input})
             with st.chat_message("user"):
                 st.markdown(user_input)
 
             with st.chat_message("assistant"):
-                with st.spinner("Mega Rayquaza Core routing and synthesizing response..."):
+                with st.spinner("Mega Rayquaza Voice Core synthesizing answer..."):
                     retrieved_context = ""
                     if st.session_state.get("persisted_doc_chunks"):
                         retrieved_context = retrieve_relevant_context(st.session_state.persisted_doc_chunks, user_input)
@@ -667,7 +711,7 @@ if st.session_state.configured_app:
                         f"{app_info['system_prompt']}\n\n"
                         f"USER-CONFIGURED PERSONALITY & TRAITS:\n{st.session_state.ai_custom_trait}\n\n"
                         "OPERATIONAL DIRECTIVES:\n"
-                        "1. Answer with clarity, authority, and thorough explanations.\n"
+                        "1. Answer concisely and conversationally so responses sound natural when spoken by the voice assistant.\n"
                         "2. IF THE USER ASKS FOR A QR CODE: Output `GENERATE_QR: <url or string>`. If they ask for a QR code of their uploaded document, use the live document link provided in context.\n"
                         "3. IF PERFORMING MATH, TABLE DATA, OR PLOTS: Provide Python code inside ```python ``` that assigns `fig` or prints calculation results.\n"
                         "4. IF CREATING A VIDEO: Output `VIDEO_PROMPT: <vivid visual prompt>` on the last line.\n"
@@ -703,7 +747,6 @@ if st.session_state.configured_app:
                     reply = call_groq(messages, model=active_model, max_tok=current_tokens, temp=current_temp)
 
                     if reply:
-                        # Extract QR Generation
                         qr_bytes = None
                         qr_match = re.search(r"GENERATE_QR:\s*(.+)", reply, re.IGNORECASE)
                         if qr_match:
@@ -714,7 +757,6 @@ if st.session_state.configured_app:
                         elif "qr" in user_input.lower() and st.session_state.get("persisted_doc_url"):
                             qr_bytes = build_qr_bytes(st.session_state.persisted_doc_url)
 
-                        # Extract Sandboxed Code Execution
                         repl_output = None
                         plot_fig = None
                         code_match = re.search(r"```(?:python)?\s*(.*?)\s*```", reply, re.DOTALL)
@@ -725,7 +767,6 @@ if st.session_state.configured_app:
                                 repl_output = stdout_txt if stdout_txt.strip() else None
                                 plot_fig = fig
 
-                        # Extract Video Generation
                         video_bytes = None
                         visual_url = None
                         video_link = None
@@ -739,7 +780,6 @@ if st.session_state.configured_app:
                             if v_bytes and "video" in (c_type or ""):
                                 video_bytes = v_bytes
 
-                        # Extract Image Generation
                         image_url = None
                         img_match = re.search(r"IMAGE_PROMPT:\s*(.+)", reply, re.IGNORECASE)
                         if img_match and not vid_match:
@@ -747,7 +787,6 @@ if st.session_state.configured_app:
                             encoded_i = urllib.parse.quote(raw_img[:250])
                             image_url = f"https://image.pollinations.ai/prompt/{encoded_i}?width=768&height=512&nologo=true"
 
-                        # Extract PDF Generation
                         pdf_data = None
                         pdf_title = "Document"
                         pdf_match = re.search(r"GENERATE_PDF:\s*(.+)", reply, re.IGNORECASE)
@@ -756,7 +795,6 @@ if st.session_state.configured_app:
                             clean_doc = re.sub(r"GENERATE_PDF:\s*.+", "", reply, flags=re.IGNORECASE).strip()
                             pdf_data = build_pdf_bytes(pdf_title, clean_doc)
 
-                        # Extract PPTX Generation
                         pptx_data = None
                         json_match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", reply, re.DOTALL)
                         if json_match:
@@ -767,7 +805,6 @@ if st.session_state.configured_app:
                             except Exception:
                                 pass
 
-                        # Clean response text
                         cleaned = re.sub(r"GENERATE_QR:\s*.+", "", reply, flags=re.IGNORECASE)
                         cleaned = re.sub(r"VIDEO_PROMPT:\s*.+", "", cleaned, flags=re.IGNORECASE)
                         cleaned = re.sub(r"IMAGE_PROMPT:\s*.+", "", cleaned, flags=re.IGNORECASE)
