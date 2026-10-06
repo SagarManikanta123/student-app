@@ -8,6 +8,7 @@ import io
 import json
 import zipfile
 import unicodedata
+from datetime import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -15,6 +16,9 @@ import sympy as sp
 import qrcode
 from fpdf import FPDF
 from pptx import Presentation
+from pptx.util import Inches, Pt
+from pptx.dml.color import RGBColor
+from pptx.enum.text import PP_ALIGN
 from pypdf import PdfReader
 
 st.set_page_config(page_title="Sagar AI", layout="wide")
@@ -22,41 +26,19 @@ st.set_page_config(page_title="Sagar AI", layout="wide")
 # High-Tech Cyberpunk Starfield & Animated Holographic Background
 st.markdown("""
 <style>
-    /* Full App Animated Cyberpunk Starfield Background */
-    @keyframes pulseGlow {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
-    }
-
     .stApp {
         background-color: #070913;
         background-image: 
-            radial-gradient(circle at 15% 20%, rgba(99, 102, 241, 0.25) 0%, transparent 45%),
-            radial-gradient(circle at 85% 15%, rgba(168, 85, 247, 0.28) 0%, transparent 50%),
-            radial-gradient(circle at 50% 85%, rgba(14, 165, 233, 0.22) 0%, transparent 55%),
-            radial-gradient(circle at 80% 80%, rgba(236, 72, 153, 0.18) 0%, transparent 40%),
+            radial-gradient(circle at 15% 20%, rgba(99, 102, 241, 0.28) 0%, transparent 45%),
+            radial-gradient(circle at 85% 15%, rgba(168, 85, 247, 0.3) 0%, transparent 50%),
+            radial-gradient(circle at 50% 85%, rgba(14, 165, 233, 0.25) 0%, transparent 55%),
+            radial-gradient(circle at 80% 80%, rgba(236, 72, 153, 0.2) 0%, transparent 40%),
             linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
             linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
         background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 35px 35px, 35px 35px;
         background-attachment: fixed;
     }
 
-    /* Ambient Floating Glow Ring */
-    .stApp::before {
-        content: "";
-        position: fixed;
-        top: -150px;
-        left: 30%;
-        width: 600px;
-        height: 600px;
-        background: radial-gradient(circle, rgba(129, 140, 248, 0.18) 0%, transparent 70%);
-        pointer-events: none;
-        z-index: 0;
-        filter: blur(40px);
-    }
-
-    /* Glassmorphism Navigation & Tabs */
     .stTabs [data-baseweb="tab-list"] {
         gap: 10px;
         background: rgba(15, 23, 42, 0.75);
@@ -72,19 +54,14 @@ st.markdown("""
         color: #94a3b8;
         font-weight: 700;
         letter-spacing: 0.3px;
-        transition: all 0.25s ease-in-out;
-    }
-    .stTabs [data-baseweb="tab"]:hover {
-        color: #38bdf8;
     }
     .stTabs [aria-selected="true"] {
-        background: linear-gradient(135deg, rgba(99, 102, 241, 0.4), rgba(168, 85, 247, 0.4)) !important;
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.45), rgba(168, 85, 247, 0.45)) !important;
         color: #ffffff !important;
         border: 1px solid rgba(168, 85, 247, 0.6) !important;
-        box-shadow: 0 0 15px rgba(168, 85, 247, 0.4) !important;
+        box-shadow: 0 0 18px rgba(168, 85, 247, 0.4) !important;
     }
 
-    /* Holographic Cyberpunk Title */
     .sagar-header {
         background: linear-gradient(90deg, #38bdf8, #818cf8, #e879f9);
         -webkit-background-clip: text;
@@ -109,7 +86,6 @@ st.markdown("""
         backdrop-filter: blur(10px);
     }
 
-    /* Cyberpunk Pilot Bubble */
     .user-bubble-container {
         display: flex;
         justify-content: flex-end;
@@ -135,7 +111,6 @@ st.markdown("""
         margin-bottom: 4px;
     }
 
-    /* Sagar AI Futuristic HUD Bubble */
     .ai-bubble-container {
         display: flex;
         justify-content: flex-start;
@@ -143,33 +118,42 @@ st.markdown("""
         padding-right: 8%;
     }
     .ai-bubble {
-        background: linear-gradient(135deg, rgba(20, 24, 48, 0.85), rgba(15, 23, 42, 0.92));
+        background: linear-gradient(135deg, rgba(20, 24, 48, 0.88), rgba(15, 23, 42, 0.94));
         border: 1px solid rgba(168, 85, 247, 0.5);
         border-left: 4px solid #e879f9;
         border-radius: 4px 20px 20px 20px;
-        padding: 18px 26px;
+        padding: 20px 28px;
         color: #f1f5f9;
-        box-shadow: 0 10px 35px rgba(168, 85, 247, 0.22);
+        box-shadow: 0 10px 35px rgba(168, 85, 247, 0.25);
         backdrop-filter: blur(14px);
         width: 100%;
     }
     .ai-tag {
-        font-size: 0.75rem;
+        font-size: 0.78rem;
         font-weight: 800;
         color: #e879f9;
         text-transform: uppercase;
         letter-spacing: 1.4px;
-        margin-bottom: 8px;
+        margin-bottom: 12px;
         display: flex;
         align-items: center;
         gap: 6px;
     }
+
+    .product-card {
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid rgba(99, 102, 241, 0.3);
+        border-radius: 12px;
+        padding: 12px 16px;
+        margin-top: 10px;
+        margin-bottom: 10px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<p class="sagar-header">Sagar AI: Universal Intelligence</p>', unsafe_allow_html=True)
-st.markdown('<span class="sagar-badge">✨ Powered by Sagar AI Multimodal Core</span>', unsafe_allow_html=True)
-st.caption("Clean product outputs, textbook LaTeX mathematics, voice customization, and mobile deployment.")
+st.markdown('<p class="sagar-header">Sagar AI: Autonomous Creative Factory</p>', unsafe_allow_html=True)
+st.markdown('<span class="sagar-badge">🧠 Complex Reasoning Matrix & Autonomous Innovation Engine Active</span>', unsafe_allow_html=True)
+st.caption("First-principles design, systems-level trade-off analysis, LaTeX textbook rigor, dark-mode presentations & verified hardware.")
 
 def sanitize_text(text):
     if not text:
@@ -220,23 +204,128 @@ def clean_pdf_text(text):
     safe_ascii = "".join(c for c in normalized if 32 <= ord(c) <= 126 or c == "\n")
     return safe_ascii
 
+class SagarExecutivePDF(FPDF):
+    def header(self):
+        self.set_fill_color(15, 23, 42)
+        self.rect(0, 0, 210, 18, 'F')
+        self.set_font("Helvetica", "B", 9)
+        self.set_text_color(192, 132, 252)
+        self.set_xy(10, 5)
+        self.cell(0, 8, "SAGAR AI AUTONOMOUS PRODUCT SPECIFICATION", align="L")
+        self.set_text_color(148, 163, 184)
+        self.set_xy(10, 5)
+        self.cell(190, 8, datetime.now().strftime("%B %Y"), align="R")
+        self.ln(12)
+
+    def footer(self):
+        self.set_y(-14)
+        self.set_font("Helvetica", size=8)
+        self.set_text_color(148, 163, 184)
+        self.cell(0, 8, f"Confidential & Proprietary Deliverable | Page {self.page_no()}", align="C")
+
 def build_pdf_bytes(title, content):
-    pdf = FPDF()
+    pdf = SagarExecutivePDF()
+    pdf.set_auto_page_break(auto=True, margin=18)
     pdf.add_page()
-    safe_title = clean_pdf_text(title)[:80]
+    safe_title = clean_pdf_text(title)[:85]
     safe_body = clean_pdf_text(content)
 
-    pdf.set_font("Helvetica", "B", 18)
-    pdf.cell(0, 12, text=safe_title if safe_title else "Document", new_x="LMARGIN", new_y="NEXT", align="C")
-    pdf.ln(5)
-    pdf.set_font("Helvetica", size=11)
+    pdf.set_fill_color(30, 41, 59)
+    pdf.set_draw_color(99, 102, 241)
+    pdf.rect(10, 22, 190, 24, 'FD')
+    pdf.set_xy(14, 25)
+    pdf.set_font("Helvetica", "B", 15)
+    pdf.set_text_color(248, 250, 252)
+    pdf.cell(182, 8, safe_title if safe_title else "Executive Deliverable", align="L")
+    pdf.set_xy(14, 34)
+    pdf.set_font("Helvetica", "I", 9)
+    pdf.set_text_color(56, 189, 248)
+    pdf.cell(182, 6, "Engineered by Sagar AI Production Council | First-Principles Product", align="L")
 
+    pdf.set_xy(10, 52)
     for paragraph in safe_body.split("\n"):
         p_clean = paragraph.strip()
-        if p_clean:
-            pdf.multi_cell(0, 7, text=p_clean)
+        if not p_clean:
+            pdf.ln(3)
+            continue
+        if p_clean.startswith("#") or (len(p_clean) < 40 and p_clean.isupper()):
+            clean_head = p_clean.replace("#", "").strip()
+            pdf.ln(4)
+            pdf.set_fill_color(243, 244, 246)
+            pdf.set_font("Helvetica", "B", 12)
+            pdf.set_text_color(30, 58, 138)
+            pdf.cell(0, 8, clean_head, new_x="LMARGIN", new_y="NEXT", align="L")
             pdf.ln(2)
+        elif p_clean.startswith("- ") or p_clean.startswith("* "):
+            pdf.set_font("Helvetica", size=10)
+            pdf.set_text_color(51, 65, 85)
+            pdf.cell(6, 6, chr(149), align="R")
+            pdf.multi_cell(0, 6, text=" " + p_clean[2:])
+        else:
+            pdf.set_font("Helvetica", size=10)
+            pdf.set_text_color(30, 41, 59)
+            pdf.multi_cell(0, 6, text=p_clean)
+            pdf.ln(1.5)
+
     return bytes(pdf.output())
+
+def build_pptx_bytes(presentation_data):
+    prs = Presentation()
+    prs.slide_width = Inches(13.333)
+    prs.slide_height = Inches(7.5)
+    blank_layout = prs.slide_layouts[6]
+
+    for index, slide_info in enumerate(presentation_data.get("slides", [])):
+        slide = prs.slides.add_slide(blank_layout)
+
+        bg = slide.shapes.add_shape(1, 0, 0, Inches(13.333), Inches(7.5))
+        bg.fill.solid()
+        bg.fill.fore_color.rgb = RGBColor(11, 15, 25)
+        bg.line.fill.background()
+
+        stripe = slide.shapes.add_shape(1, 0, 0, Inches(13.333), Inches(0.18))
+        stripe.fill.solid()
+        stripe.fill.fore_color.rgb = RGBColor(99, 102, 241) if index % 2 == 0 else RGBColor(232, 121, 249)
+        stripe.line.fill.background()
+
+        title_box = slide.shapes.add_textbox(Inches(0.9), Inches(0.6), Inches(11.5), Inches(1.2))
+        tf = title_box.text_frame
+        tf.word_wrap = True
+        p = tf.paragraphs[0]
+        p.text = slide_info.get("title", f"Module {index+1}")
+        p.font.size = Pt(32)
+        p.font.bold = True
+        p.font.color.rgb = RGBColor(248, 250, 252)
+
+        num_box = slide.shapes.add_textbox(Inches(11.8), Inches(0.4), Inches(1.0), Inches(0.6))
+        np_p = num_box.text_frame.paragraphs[0]
+        np_p.text = f"0{index+1}" if index < 9 else str(index+1)
+        np_p.font.size = Pt(18)
+        np_p.font.bold = True
+        np_p.font.color.rgb = RGBColor(148, 163, 184)
+        np_p.alignment = PP_ALIGN.RIGHT
+
+        card = slide.shapes.add_shape(1, Inches(0.9), Inches(2.0), Inches(11.5), Inches(4.7))
+        card.fill.solid()
+        card.fill.fore_color.rgb = RGBColor(20, 27, 45)
+        card.line.color.rgb = RGBColor(51, 65, 85)
+
+        bullets = slide_info.get("bullets", [])
+        body_box = slide.shapes.add_textbox(Inches(1.2), Inches(2.3), Inches(10.9), Inches(4.2))
+        btf = body_box.text_frame
+        btf.word_wrap = True
+
+        for b_idx, bullet in enumerate(bullets):
+            p_bullet = btf.paragraphs[0] if b_idx == 0 else btf.add_paragraph()
+            p_bullet.text = bullet
+            p_bullet.font.size = Pt(17)
+            p_bullet.font.color.rgb = RGBColor(226, 232, 240)
+            p_bullet.space_after = Pt(16)
+            p_bullet.level = 0
+
+    buf = io.BytesIO()
+    prs.save(buf)
+    return buf.getvalue()
 
 def upload_to_temp_host(file_bytes, filename):
     try:
@@ -318,7 +407,7 @@ def build_deployment_zip(app_code, goal_text):
         "streamlit\nrequests\nnumpy\nmatplotlib\n"
         "fpdf2\npython-pptx\npypdf\nqrcode[pil]\npandas\nsympy\n"
     )
-    readme_txt = f"# Sagar AI Application\nGenerated by Sagar AI Factory.\n\n### Objective:\n{goal_text}\n"
+    readme_txt = f"# Sagar AI Application\nGenerated by Sagar AI Autonomous Factory.\n\n### Objective:\n{goal_text}\n"
     manifest_txt = json.dumps({
         "name": "Sagar AI",
         "short_name": "SagarAI",
@@ -333,26 +422,6 @@ def build_deployment_zip(app_code, goal_text):
         zip_file.writestr("README.md", readme_txt)
         zip_file.writestr("manifest.json", manifest_txt)
     return zip_buffer.getvalue()
-
-def build_pptx_bytes(presentation_data):
-    prs = Presentation()
-    for slide_info in presentation_data.get("slides", []):
-        slide = prs.slides.add_slide(prs.slide_layouts[1])
-        title = slide.shapes.title
-        body = slide.placeholders[1]
-        title.text = slide_info.get("title", "Untitled Slide")
-        tf = body.text_frame
-        tf.word_wrap = True
-        bullets = slide_info.get("bullets", [])
-        if bullets:
-            tf.text = bullets[0]
-            for bullet in bullets[1:]:
-                p = tf.add_paragraph()
-                p.text = bullet
-                p.level = 0
-    buf = io.BytesIO()
-    prs.save(buf)
-    return buf.getvalue()
 
 def build_qr_bytes(payload_data):
     qr = qrcode.QRCode(version=None, error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=10, border=3)
@@ -373,7 +442,6 @@ def fetch_media_bytes(url, timeout=30):
         pass
     return None, None
 
-# Read Secrets
 api_key = ""
 if "GROQ_API_KEY" in st.secrets:
     api_key = sanitize_text(st.secrets["GROQ_API_KEY"])
@@ -388,7 +456,7 @@ PRIMARY_TEXT_MODEL = "openai/gpt-oss-120b"
 BACKUP_TEXT_MODEL = "openai/gpt-oss-20b"
 PRIMARY_VISION_MODEL = "qwen/qwen3.8-27b"
 
-def call_groq(messages, model=PRIMARY_TEXT_MODEL, key=api_key, max_tok=1800, temp=0.25):
+def call_groq(messages, model=PRIMARY_TEXT_MODEL, key=api_key, max_tok=2200, temp=0.3):
     clean_k = sanitize_text(key)
     headers = {
         "Authorization": f"Bearer {clean_k}",
@@ -402,7 +470,7 @@ def call_groq(messages, model=PRIMARY_TEXT_MODEL, key=api_key, max_tok=1800, tem
         "max_tokens": max_tok
     }
     try:
-        res = requests.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=payload, timeout=45)
+        res = requests.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=payload, timeout=50)
         if res.status_code == 200:
             msg = res.json()["choices"][0]["message"]
             content = msg.get("content") or msg.get("reasoning") or ""
@@ -543,9 +611,9 @@ if "persisted_doc_name" not in st.session_state:
 if "persisted_doc_url" not in st.session_state:
     st.session_state.persisted_doc_url = None
 if "ai_creativity" not in st.session_state:
-    st.session_state.ai_creativity = 0.25
+    st.session_state.ai_creativity = 0.35
 if "ai_max_tokens" not in st.session_state:
-    st.session_state.ai_max_tokens = 1800
+    st.session_state.ai_max_tokens = 2200
 if "voice_pitch" not in st.session_state:
     st.session_state.voice_pitch = 1.0
 if "voice_rate" not in st.session_state:
@@ -556,13 +624,13 @@ if "user_voice_sample" not in st.session_state:
     st.session_state.user_voice_sample = None
 if "ai_custom_trait" not in st.session_state:
     st.session_state.ai_custom_trait = (
-        "Rigorous, complete products only, polite. "
-        "All mathematics must be displayed in standard notebook notation using $inline$ and $$display$$ LaTeX blocks. "
-        "Never show raw python script code in between answers unless explicitly requested."
+        "Visionary systems architect. Applies first-principles deconstruction and lateral creative synthesis. "
+        "Solves complex multi-variable problems with full mathematical modeling ($LaTeX$) and actionable engineering solutions. "
+        "No superficial outlines or raw code dumps in conversational prose."
     )
 
 # SECTION 1: AI FACTORY CREATOR
-st.subheader("1. Sagar AI Creator (Voice or Text)")
+st.subheader("1. Sagar AI Creator (Autonomous Product Studio)")
 col_c_text, col_c_mic = st.columns([2, 1])
 
 with col_c_mic:
@@ -571,8 +639,8 @@ with col_c_mic:
 
 with col_c_text:
     user_request = st.text_area(
-        "Describe the AI tool you want Sagar AI to build:",
-        placeholder="e.g. Build an electronic prototype assistant that produces clean diagrams, parts lists, and notebook-style formulas without code dumps.",
+        "Describe the specialized AI tool you want Sagar AI to architect:",
+        placeholder="e.g. Build an autonomous hardware and avionics architect that invents novel drone sensory payloads, calculates aerodynamic drag, and generates production blueprints.",
         height=95
     )
 
@@ -582,49 +650,55 @@ if st.button("Deploy with Sagar AI", type="primary"):
     elif not user_request.strip():
         st.warning("Please provide a prompt or speak your AI design.")
     else:
-        with st.status("Initializing Sagar AI Systems...", expanded=True) as status:
-            status.write("Harmonizing multi-department council under Sagar AI...")
+        with st.status("Harmonizing Complex Thinking Matrix under Sagar AI...", expanded=True) as status:
+            status.write("🧠 Activating First-Principles Reasoner & Autonomous Brains...")
             council_synthesis_prompt = (
-                f"You are Sagar AI — an advanced multimodal system created for: '{user_request}'.\n"
-                "Incorporate all 26 brain domains:\n"
-                "1. Core Intelligence: Sagar AI (Complete Products, Clean Output Mandate)\n"
-                "2. Mathematics Brain (Textbook & Notebook Math Notation Specialist)\n"
+                f"You are Sagar AI — an autonomous creative intelligence engine built for: '{user_request}'.\n"
+                "Unify all 26 brain domains with complex thinking & self-creativity:\n"
+                "1. Core Intelligence: Sagar AI (First-Principles Reasoner & Full Product Mandate)\n"
+                "2. Mathematics Brain (Textbook & Notebook Math Notation Specialist with full LaTeX proofs)\n"
                 "3. Voice Assistant Engine (Speaks in User Voice Profile)\n"
-                "4. Hardware & Electronics Specialist (Circuits, Schematics, Pinouts, Hardware Explanations)\n"
+                "4. Hardware & Electronics Specialist (Circuits, Schematics, Pinouts, Complete Working Firmware)\n"
                 "5. Vision Inspector (Visual Hardware & Photo Analysis)\n"
-                "6. Theoretical & Classical Physics Engine (Formulas in display LaTeX)\n"
-                "7. Chemistry Specialist (Balanced Equations)\n"
+                "6. Theoretical & Classical Physics Engine (Formulas rendered in display LaTeX)\n"
+                "7. Chemistry Specialist (Balanced Equations & Thermal Thermodynamics)\n"
                 "8. Computer Science & Algorithm Engine\n"
                 "9. Software Engineering Brain\n"
                 "10. Microcontroller Firmware Specialist\n"
                 "11. Dynamic Visualizer & Graph Plotter\n"
                 "12. Motion & Video Specialist\n"
                 "13. Still Image Prompt Specialist\n"
-                "14. Document Compiler (PDF Reports with clean formatting)\n"
-                "15. Slide Deck Architect (PPTX)\n"
+                "14. Executive Publication Compiler (High-Production-Value PDF Briefings)\n"
+                "15. Slide Deck Architect (Executive Dark-Mode PPTX Decks)\n"
                 "16. Document Intake & Semantic Search Specialist\n"
                 "17. QR Code Engine (Direct mobile links and file downloads)\n"
                 "18. Computational Execution Engine\n"
                 "19-26. Multi-Disciplinary Synthesis, Production-Ready Verification, & Safety\n\n"
-                "OUTPUT FORMATTING DIRECTIVES:\n"
-                "1. NO IN-BETWEEN CODE DUMPS: DO NOT output python plotting scripts, figure setups, or calculation code in your answer text unless the user explicitly asks for code. Explain the results in plain, polished language.\n"
-                "2. NOTEBOOK MATHEMATICS: NEVER display raw programming syntax like `sqrt(x^2 + y^2)` or `x**2`. ALWAYS render formulas using LaTeX: `$inline$` for in-sentence math, and `$$display$$` for standalone equations (e.g. $$\\int_0^\\infty e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}$$, $$x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$).\n"
-                "3. FULL PRODUCTS ONLY: Provide complete, fully-realized deliverables without placeholders.\n"
-                "4. If a graph or plot is needed: You may provide the plotting python block tagged ```python ```, but place it at the very bottom so it can be rendered cleanly without disrupting the reading flow.\n"
-                "5. If the user asks for a QR CODE: Output `GENERATE_QR: <url or string>`.\n"
-                "6. If the user requests a VIDEO: Output `VIDEO_PROMPT: <detailed motion description>` on the last line.\n"
-                "7. If the user requests an IMAGE: Output `IMAGE_PROMPT: <visual prompt>` on the last line.\n"
-                "8. If the user requests a PRESENTATION: Output a JSON block inside ```json ``` with structure: {\"slides\": [{\"title\": \"...\", \"bullets\": [\"...\", \"...\"]}]}.\n"
-                "9. If the user requests a PDF/REPORT: Conclude with `GENERATE_PDF: <Title>`.\n"
+                "COMPLEX THINKING & SELF-CREATIVE MANDATES:\n"
+                "1. FIRST-PRINCIPLES DECONSTRUCTION: Never produce generic textbook lists. Break every problem down into physics, logic, and fundamental constraints, then innovate unconventional yet practical optimizations.\n"
+                "2. HIGH PRODUCTIVITY 4-PILLAR STRUCTURE: For any engineering, hardware, or technical solution, structure your reply using 4 rich pillars:\n"
+                "   - Pillar 1: 📐 System Architecture & Specifications (component ratings, power, interfaces)\n"
+                "   - Pillar 2: ⚡ Hardware Schematics, Pin-to-Pin Wiring & Parts List\n"
+                "   - Pillar 3: 🔬 Mathematical Proofs & Theoretical Formulas ($LaTeX$ notation with step-by-step reasoning)\n"
+                "   - Pillar 4: 🚀 Production-Ready Firmware Logic & Edge-Case Safeguards\n"
+                "3. NOTEBOOK MATHEMATICS: NEVER display raw programming syntax like `sqrt(x^2 + y^2)` or `x**2`. ALWAYS render formulas using LaTeX: `$inline$` for in-sentence math, and `$$display$$` for standalone equations.\n"
+                "4. NO IN-BETWEEN CODE: DO NOT show raw python code for computations or plots in your answer text unless the user specifically asks to see code. Provide clear text explanations and results.\n"
+                "5. COMPLETE DELIVERABLES: Provide fully realized, complete answers without placeholders or half-finished steps.\n"
+                "6. If a graph is needed, you may supply executable code at the very end in a ```python ``` block so the system can render the figure, but explain the outcome directly in text.\n"
+                "7. If the user asks for a QR CODE: Output `GENERATE_QR: <url or string>`.\n"
+                "8. If CREATING A VIDEO: Output `VIDEO_PROMPT: <vivid visual prompt>` on the last line.\n"
+                "9. If CREATING AN IMAGE: Output `IMAGE_PROMPT: <visual prompt>` on the last line.\n"
+                "10. If CREATING SLIDES: Output a JSON block inside ```json ``` with structure: {\"slides\": [{\"title\": \"...\", \"bullets\": [\"...\", \"...\"]}]}.\n"
+                "11. If WRITING A REPORT/PDF: Conclude with `GENERATE_PDF: <Title>`.\n"
             )
             master_system_prompt = call_groq(
                 [{"role": "user", "content": council_synthesis_prompt}],
                 model=PRIMARY_TEXT_MODEL,
-                max_tok=1400,
-                temp=0.25
+                max_tok=1700,
+                temp=0.3
             )
 
-            status.write("Assembling Sagar AI deployment package...")
+            status.write("Compiling autonomous deployment bundle...")
             code_prompt = (
                 f"Write a standalone Streamlit Python app implementing this directive:\n{master_system_prompt}\n\n"
                 "Output ONLY executable Python code inside a single markdown code block with python tag."
@@ -632,7 +706,7 @@ if st.button("Deploy with Sagar AI", type="primary"):
             raw_code = call_groq(
                 [{"role": "user", "content": code_prompt}],
                 model=PRIMARY_TEXT_MODEL,
-                max_tok=1600,
+                max_tok=1700,
                 temp=0.1
             )
             clean_code = extract_clean_code(raw_code) if raw_code else "# Code generation complete."
@@ -643,7 +717,7 @@ if st.button("Deploy with Sagar AI", type="primary"):
                 "source_code": clean_code
             }
             st.session_state.chat_history = []
-            status.update(label="Sagar AI Successfully Deployed!", state="complete", expanded=False)
+            status.update(label="Sagar AI Successfully Deployed with Complex Thinking Engine!", state="complete", expanded=False)
             st.rerun()
 
 # SECTION 2: CREATED AI WORKSPACE
@@ -658,7 +732,6 @@ if st.session_state.configured_app:
         "📦 Export Standalone Code & ZIP"
     ])
 
-    # TAB 2: VOICE CONFIGURATION
     with tab2:
         st.subheader("🎙️ Add Your Own Voice to Sagar AI")
         st.caption("Record and calibrate your voice characteristics so Sagar AI speaks directly in your tone and speed.")
@@ -694,7 +767,7 @@ if st.session_state.configured_app:
                 st.success("✅ Voice sample captured and bound to Sagar AI.")
 
             st.write("### 3. Test How Sagar AI Sounds")
-            test_phrase = "Hello! I am Sagar AI, and I am now speaking in your customized voice."
+            test_phrase = "Hello! I am Sagar AI, powered by complex reasoning and first-principles creative synthesis."
             test_js = f"""
             <div>
                 <button onclick="
@@ -719,17 +792,16 @@ if st.session_state.configured_app:
             components.html(test_js, height=50)
 
         st.markdown("---")
-        st.subheader("Persona Directives")
+        st.subheader("Autonomous Reasoning & Persona Directives")
         st.session_state.ai_creativity = st.slider(
-            "Creativity (Temperature)", min_value=0.0, max_value=1.0, value=float(st.session_state.ai_creativity), step=0.05
+            "Creativity & Lateral Thinking Index", min_value=0.0, max_value=1.0, value=float(st.session_state.ai_creativity), step=0.05
         )
         st.session_state.ai_custom_trait = st.text_area(
-            "Custom Persona Traits & Clean Output Guidelines:",
+            "Complex Reasoning Traits & Clean Output Guidelines:",
             value=st.session_state.ai_custom_trait
         )
-        st.success("✅ Voice profile and parameters active in Sagar AI.")
+        st.success("✅ Complex thinking profile and parameters active in Sagar AI.")
 
-    # TAB 3: MOBILE INSTALLATION
     with tab3:
         st.subheader("📱 Install Sagar AI on Your Mobile Phone")
         current_url = "https://student-app-cfuamr4f9gqwo2azrdqwwr.streamlit.app"
@@ -747,7 +819,6 @@ if st.session_state.configured_app:
             **iPhone:** Scan QR -> Open in Safari -> Tap Share button -> Tap **"Add to Home Screen"**.
             """)
 
-    # TAB 4: CODE & ZIP EXPORTER
     with tab4:
         st.subheader("Sagar AI Deployment Bundle")
         zip_bytes = build_deployment_zip(app_info["source_code"], app_info["goal"])
@@ -770,10 +841,9 @@ if st.session_state.configured_app:
         st.markdown("---")
         st.code(app_info["source_code"], language="python")
 
-    # TAB 1: WORKSPACE
     with tab1:
         st.subheader("2. Your Active Sagar AI Assistant")
-        st.caption(f"Objective: {app_info['goal']} | Engine: Sagar AI Active")
+        st.caption(f"Objective: {app_info['goal']} | Engine: Complex Reasoning Active")
 
         st.markdown("#### 📁 File Intake, Voice & Cloud Memory")
         col_img, col_doc, col_mic = st.columns([1.3, 1.7, 1.2])
@@ -843,11 +913,14 @@ if st.session_state.configured_app:
                 st.markdown("""
                 <div class="ai-bubble-container">
                     <div class="ai-bubble">
-                        <div class="ai-tag">✨ Sagar AI</div>
+                        <div class="ai-tag">✨ Sagar AI Complex Solution</div>
                 """, unsafe_allow_html=True)
 
                 if msg.get("text_content"):
                     st.markdown(msg["text_content"])
+
+                if any([msg.get("qr_bytes"), msg.get("pdf_data"), msg.get("pptx_data"), msg.get("plot_fig"), msg.get("video_bytes"), msg.get("image_url")]):
+                    st.markdown("<div class='product-card'><b>🛠️ Deliverable Actions & Exports</b></div>", unsafe_allow_html=True)
 
                 if msg.get("qr_bytes"):
                     st.image(msg["qr_bytes"], caption="Scannable QR Code", width=220)
@@ -867,15 +940,17 @@ if st.session_state.configured_app:
                 if msg.get("plot_fig"):
                     st.pyplot(msg["plot_fig"])
 
-                if msg.get("pdf_data"):
-                    st.download_button(f"📄 Download Document: {msg['pdf_title']}.pdf", data=msg["pdf_data"], file_name=f"{msg['pdf_title'].replace(' ', '_')}.pdf", mime="application/pdf", key=f"dl_pdf_btn_{idx}")
-
-                if msg.get("pptx_data"):
-                    st.download_button("📊 Download Slide Deck (.pptx)", data=msg["pptx_data"], file_name="presentation.pptx", mime="application/vnd.openxmlformats-officedocument.presentationml.presentation", key=f"dl_pptx_btn_{idx}")
+                c_dl1, c_dl2 = st.columns(2)
+                with c_dl1:
+                    if msg.get("pdf_data"):
+                        st.download_button(f"📄 Download Executive PDF: {msg['pdf_title']}.pdf", data=msg["pdf_data"], file_name=f"{msg['pdf_title'].replace(' ', '_')}.pdf", mime="application/pdf", key=f"dl_pdf_btn_{idx}")
+                with c_dl2:
+                    if msg.get("pptx_data"):
+                        st.download_button("📊 Download Designer Deck (.pptx)", data=msg["pptx_data"], file_name="presentation.pptx", mime="application/vnd.openxmlformats-officedocument.presentationml.presentation", key=f"dl_pptx_btn_{idx}")
 
                 st.markdown("</div></div>", unsafe_allow_html=True)
 
-        user_input = st.chat_input("Ask Sagar AI a question, request a prototype, or solve a math problem...")
+        user_input = st.chat_input("Request an innovative prototype, mathematical derivation, or system design...")
         if user_input:
             st.session_state.chat_history.append({"role": "user", "text_content": user_input})
             st.markdown(f"""
@@ -887,7 +962,7 @@ if st.session_state.configured_app:
             </div>
             """, unsafe_allow_html=True)
 
-            with st.spinner("Sagar AI synthesizing clean response..."):
+            with st.spinner("Sagar AI synthesizing first-principles solution..."):
                 retrieved_context = ""
                 if st.session_state.get("persisted_doc_chunks"):
                     retrieved_context = retrieve_relevant_context(st.session_state.persisted_doc_chunks, user_input)
@@ -896,16 +971,22 @@ if st.session_state.configured_app:
                     f"You are Sagar AI, created for: {app_info['goal']}.\n"
                     f"{app_info['system_prompt']}\n\n"
                     f"USER-CONFIGURED PERSONALITY & TRAITS:\n{st.session_state.ai_custom_trait}\n\n"
-                    "CORE OPERATIONAL RULES:\n"
-                    "1. NO IN-BETWEEN CODE: Do NOT show raw python code for computations or plots in your answer text unless the user specifically asks to see code. Provide clear text explanations and results.\n"
-                    "2. NOTEBOOK MATHEMATICS: Never output raw syntax like `x**2` or `sqrt(...)`. Always format all mathematics, equations, formulas, fractions, and matrices using LaTeX: `$inline$` for inline terms and `$$display$$` for standalone equations.\n"
-                    "3. COMPLETE DELIVERABLES: Provide fully realized, complete answers without placeholders or half-finished steps.\n"
-                    "4. If a graph is needed, you may supply executable code at the very end in a ```python ``` block so the system can render the figure, but explain the outcome directly in text.\n"
-                    "5. If the user asks for a QR CODE: Output `GENERATE_QR: <url or string>`.\n"
-                    "6. If CREATING A VIDEO: Output `VIDEO_PROMPT: <vivid visual prompt>` on the last line.\n"
-                    "7. If CREATING AN IMAGE: Output `IMAGE_PROMPT: <visual prompt>` on the last line.\n"
-                    "8. If CREATING SLIDES: Output a JSON block inside ```json ``` with structure: {\"slides\": [{\"title\": \"...\", \"bullets\": [\"...\", \"...\"]}]}.\n"
-                    "9. If WRITING A REPORT/PDF: Conclude with `GENERATE_PDF: <Title>`.\n"
+                    "FIRST-PRINCIPLES & COMPLEX THINKING DIRECTIVES:\n"
+                    "1. AUTONOMOUS CREATIVE SYNTHESIS: Deconstruct the problem from ground up. Invent robust architectures, address component tolerances, and calculate exact energy/thermal budgets.\n"
+                    "2. THE 4-PILLAR STRUCTURE: For any engineering, hardware, or technical solution, structure your reply using 4 rich pillars:\n"
+                    "   - Pillar 1: 📐 System Architecture & Specifications (component ratings, pin allocations, power rails)\n"
+                    "   - Pillar 2: ⚡ Hardware Schematics, Pin-to-Pin Wiring & Parts List\n"
+                    "   - Pillar 3: 🔬 Mathematical Proofs & Theoretical Formulas ($LaTeX$ notation with step-by-step derivations)\n"
+                    "   - Pillar 4: 🚀 Production-Ready Firmware Logic & Edge-Case Safeguards (failure recovery, debounce, brownout defense)\n"
+                    "3. NOTEBOOK MATHEMATICS: NEVER display raw programming syntax like `x**2` or `sqrt(...)`. Always format all mathematics, equations, formulas, fractions, and matrices using LaTeX: `$inline$` for inline terms and `$$display$$` for standalone equations.\n"
+                    "4. NO IN-BETWEEN CODE: Do NOT show raw python code for computations or plots in your answer text unless the user specifically asks to see code. Provide clear text explanations and results.\n"
+                    "5. COMPLETE DELIVERABLES: Provide fully realized, complete answers without placeholders or half-finished steps.\n"
+                    "6. If a graph is needed, you may supply executable code at the very end in a ```python ``` block so the system can render the figure, but explain the outcome directly in text.\n"
+                    "7. If the user asks for a QR CODE: Output `GENERATE_QR: <url or string>`.\n"
+                    "8. If CREATING A VIDEO: Output `VIDEO_PROMPT: <vivid visual prompt>` on the last line.\n"
+                    "9. If CREATING AN IMAGE: Output `IMAGE_PROMPT: <visual prompt>` on the last line.\n"
+                    "10. If CREATING SLIDES: Output a JSON block inside ```json ``` with structure: {\"slides\": [{\"title\": \"...\", \"bullets\": [\"...\", \"...\"]}]}.\n"
+                    "11. If WRITING A REPORT/PDF: Conclude with `GENERATE_PDF: <Title>`.\n"
                 )
 
                 if st.session_state.get("persisted_doc_url"):
@@ -976,7 +1057,7 @@ if st.session_state.configured_app:
                         image_url = f"https://image.pollinations.ai/prompt/{encoded_i}?width=768&height=512&nologo=true"
 
                     pdf_data = None
-                    pdf_title = "Document"
+                    pdf_title = "Sagar_AI_Executive_Deliverable"
                     pdf_match = re.search(r"GENERATE_PDF:\s*(.+)", reply, re.IGNORECASE)
                     if pdf_match:
                         pdf_title = pdf_match.group(1).strip()
