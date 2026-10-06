@@ -19,44 +19,83 @@ from pypdf import PdfReader
 
 st.set_page_config(page_title="Sagar AI", layout="wide")
 
-# Creative Futuristic HUD Chat Styling (Sagar AI Theme)
+# Creative Dynamic Background & Holographic HUD Styling
 st.markdown("""
 <style>
+    /* Full App Animated Deep Space Grid Background */
+    .stApp {
+        background-color: #0b0f19;
+        background-image: 
+            radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+            radial-gradient(at 100% 0%, rgba(168, 85, 247, 0.18) 0px, transparent 50%),
+            radial-gradient(at 50% 100%, rgba(14, 165, 233, 0.12) 0px, transparent 50%),
+            linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+        background-size: 100% 100%, 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+        background-attachment: fixed;
+    }
+
+    /* Glassmorphism Navigation & Tabs */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        background: rgba(15, 23, 42, 0.65);
+        backdrop-filter: blur(12px);
+        padding: 6px 12px;
+        border-radius: 12px;
+        border: 1px solid rgba(99, 102, 241, 0.25);
+    }
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 8px;
+        color: #94a3b8;
+        font-weight: 600;
+    }
+    .stTabs [aria-selected="true"] {
+        background: linear-gradient(90deg, rgba(99, 102, 241, 0.3), rgba(168, 85, 247, 0.3)) !important;
+        color: #f8fafc !important;
+        border: 1px solid rgba(168, 85, 247, 0.5) !important;
+    }
+
+    /* Neon Hologram Header */
     .sagar-header {
         background: linear-gradient(90deg, #38bdf8, #818cf8, #c084fc);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        font-size: 2.3rem;
-        font-weight: 800;
+        font-size: 2.4rem;
+        font-weight: 900;
+        letter-spacing: -0.5px;
         margin-bottom: 2px;
+        text-shadow: 0 0 25px rgba(99, 102, 241, 0.3);
     }
     .sagar-badge {
-        background: linear-gradient(90deg, rgba(30, 58, 138, 0.8), rgba(67, 56, 202, 0.8));
+        background: linear-gradient(90deg, rgba(30, 58, 138, 0.7), rgba(67, 56, 202, 0.7));
         color: #e0e7ff;
-        padding: 4px 14px;
+        padding: 5px 16px;
         border-radius: 9999px;
         font-size: 0.85rem;
         font-weight: 700;
         border: 1px solid #818cf8;
         display: inline-block;
-        margin-bottom: 12px;
-        box-shadow: 0 0 12px rgba(129, 140, 248, 0.3);
+        margin-bottom: 14px;
+        box-shadow: 0 0 16px rgba(129, 140, 248, 0.35);
+        backdrop-filter: blur(8px);
     }
+
+    /* Creative User Message Card */
     .user-bubble-container {
         display: flex;
         justify-content: flex-end;
-        margin-bottom: 14px;
+        margin-bottom: 16px;
         padding-left: 15%;
     }
     .user-bubble {
-        background: linear-gradient(135deg, #1e293b, #0f172a);
-        border: 1px solid #38bdf8;
+        background: linear-gradient(135deg, rgba(30, 41, 59, 0.85), rgba(15, 23, 42, 0.95));
+        border: 1px solid rgba(56, 189, 248, 0.6);
         border-right: 4px solid #38bdf8;
-        border-radius: 16px 4px 16px 16px;
-        padding: 12px 18px;
+        border-radius: 18px 4px 18px 18px;
+        padding: 14px 20px;
         color: #f8fafc;
-        box-shadow: 0 4px 15px rgba(56, 189, 248, 0.15);
-        position: relative;
+        box-shadow: 0 6px 20px rgba(56, 189, 248, 0.15);
+        backdrop-filter: blur(10px);
     }
     .user-tag {
         font-size: 0.72rem;
@@ -66,20 +105,23 @@ st.markdown("""
         letter-spacing: 1px;
         margin-bottom: 4px;
     }
+
+    /* Creative Sagar AI Holographic HUD Card */
     .ai-bubble-container {
         display: flex;
         justify-content: flex-start;
-        margin-bottom: 18px;
+        margin-bottom: 20px;
         padding-right: 8%;
     }
     .ai-bubble {
-        background: linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.9));
-        border: 1px solid #6366f1;
-        border-left: 4px solid #a855f7;
-        border-radius: 4px 18px 18px 18px;
-        padding: 16px 20px;
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(24, 24, 47, 0.85));
+        border: 1px solid rgba(99, 102, 241, 0.45);
+        border-left: 4px solid #c084fc;
+        border-radius: 4px 20px 20px 20px;
+        padding: 18px 24px;
         color: #f1f5f9;
-        box-shadow: 0 6px 20px rgba(99, 102, 241, 0.18);
+        box-shadow: 0 8px 30px rgba(99, 102, 241, 0.22);
+        backdrop-filter: blur(12px);
         width: 100%;
     }
     .ai-tag {
@@ -97,8 +139,8 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown('<p class="sagar-header">Sagar AI: Universal Intelligence</p>', unsafe_allow_html=True)
-st.markdown('<span class="sagar-badge">✨ Powered by Sagar AI Core Engine</span>', unsafe_allow_html=True)
-st.caption("Clean product outputs without exposed code, textbook LaTeX mathematics, voice customization, and mobile deployment.")
+st.markdown('<span class="sagar-badge">✨ Powered by Sagar AI Multimodal Core</span>', unsafe_allow_html=True)
+st.caption("Clean product outputs, textbook LaTeX mathematics, voice customization, and mobile deployment.")
 
 def sanitize_text(text):
     if not text:
@@ -253,7 +295,7 @@ def build_deployment_zip(app_code, goal_text):
         "short_name": "SagarAI",
         "start_url": "/",
         "display": "standalone",
-        "background_color": "#0f172a",
+        "background_color": "#0b0f19",
         "theme_color": "#6366f1"
     }, indent=2)
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
@@ -380,53 +422,53 @@ def render_voice_interface(element_id="mainVoice", pitch=1.0, rate=1.0, autoplay
         utter.rate = targetRate;
 
         const voices = window.speechSynthesis.getVoices();
-        if (voices.length > 0) {{{{
+        if (voices.length > 0) {{
             const preferred = voices.find(v => v.lang.startsWith('en') && !v.name.includes('Google') && !v.name.includes('Bad'));
             if (preferred) utter.voice = preferred;
-        }}}}
+        }}
 
         window.speechSynthesis.speak(utter);
         stat.innerText = "🔊 Speaking in your configured voice...";
     }}
 
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {{{{
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {{
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
         const recog = new SR();
         recog.continuous = false;
         recog.interimResults = true;
 
-        recog.onstart = () => {{{{ bIn.innerText = "🛑 Stop"; stat.innerText = "Listening to your voice..."; }}}};
-        recog.onresult = (e) => {{{{
+        recog.onstart = () => {{ bIn.innerText = "🛑 Stop"; stat.innerText = "Listening to your voice..."; }};
+        recog.onresult = (e) => {{
             let str = '';
-            for (let i = e.resultIndex; i < e.results.length; ++i) str += e.results[i][0].transcript;
+            for (let i = e.resultIndex; i < event.results.length; ++i) str += e.results[i][0].transcript;
             stat.innerText = str;
             navigator.clipboard.writeText(str);
-        }}}};
-        recog.onerror = (e) => {{{{ stat.innerText = "Mic error: " + e.error; bIn.innerText = "🎤 Speak Input"; }}}};
-        recog.onend = () => {{{{ bIn.innerText = "🎤 Speak Input (Copied!)"; }}}};
+        }};
+        recog.onerror = (e) => {{ stat.innerText = "Mic error: " + e.error; bIn.innerText = "🎤 Speak Input"; }};
+        recog.onend = () => {{ bIn.innerText = "🎤 Speak Input (Copied!)"; }};
 
-        bIn.onclick = () => {{{{ recog.start(); }}}};
-    }}}}
+        bIn.onclick = () => {{ recog.start(); }};
+    }}
 
-    bOut.onclick = () => {{{{
+    bOut.onclick = () => {{
         const allAiCards = window.parent.document.querySelectorAll('.ai-bubble');
-        if (allAiCards.length > 0) {{{{
+        if (allAiCards.length > 0) {{
             const lastText = allAiCards[allAiCards.length - 1].innerText;
             speakInMyVoice(lastText);
-        }}}} else {{{{
+        }} else {{
             stat.innerText = "No response available to speak yet.";
-        }}}}
-    }}}};
+        }}
+    }};
 
-    if (autoPlayOn) {{{{
-        setTimeout(() => {{{{
+    if (autoPlayOn) {{
+        setTimeout(() => {{
             const allAiCards = window.parent.document.querySelectorAll('.ai-bubble');
-            if (allAiCards.length > 0) {{{{
+            if (allAiCards.length > 0) {{
                 const lastText = allAiCards[allAiCards.length - 1].innerText;
                 speakInMyVoice(lastText);
-            }}}}
-        }}}}, 600);
-    }}}}
+            }}
+        }}, 600);
+    }}
     </script>
     """
     components.html(voice_html, height=85)
@@ -441,7 +483,7 @@ def inject_pwa_headers():
         "short_name": "SagarAI",
         "start_url": window.location.href,
         "display": "standalone",
-        "background_color": "#0f172a",
+        "background_color": "#0b0f19",
         "theme_color": "#6366f1"
     }));
     document.head.appendChild(manifestLink);
@@ -495,7 +537,7 @@ st.subheader("1. Sagar AI Creator (Voice or Text)")
 col_c_text, col_c_mic = st.columns([2, 1])
 
 with col_c_mic:
-    st.write("🎙️ **Voice Command to Build AI**")
+    st.write("🎙️️ **Voice Command to Build AI**")
     render_voice_interface(element_id="factory_creator_voice", pitch=st.session_state.voice_pitch, rate=st.session_state.voice_rate)
 
 with col_c_text:
@@ -582,7 +624,7 @@ if st.session_state.configured_app:
 
     tab1, tab2, tab3, tab4 = st.tabs([
         "⚡ Live Sagar AI Workspace",
-        "🎙️️ Add Your Own Voice to Sagar AI",
+        "🎙 Add Your Own Voice to Sagar AI",
         "📱 Install Sagar AI on Mobile",
         "📦 Export Standalone Code & ZIP"
     ])
@@ -632,10 +674,10 @@ if st.session_state.configured_app:
                     u.pitch = {st.session_state.voice_pitch};
                     u.rate = {st.session_state.voice_rate};
                     const voices = window.speechSynthesis.getVoices();
-                    if (voices.length > 0) {{{{
+                    if (voices.length > 0) {{
                         const preferred = voices.find(v => v.lang.startsWith('en') && !v.name.includes('Google') && !v.name.includes('Bad'));
                         if (preferred) u.voice = preferred;
-                    }}}}
+                    }}
                     window.speechSynthesis.speak(u);
                 " style="
                     background: linear-gradient(90deg, #6366f1, #a855f7);
@@ -757,7 +799,7 @@ if st.session_state.configured_app:
                     st.session_state.persisted_doc_url = None
                     st.rerun()
 
-        # Render conversation history
+        # Render conversation history inside Creative Glowing Bubbles
         for idx, msg in enumerate(st.session_state.chat_history):
             if msg["role"] == "user":
                 st.markdown(f"""
@@ -922,14 +964,12 @@ if st.session_state.configured_app:
                         except Exception:
                             pass
 
-                    # Filter out internal tags
                     cleaned = re.sub(r"GENERATE_QR:\s*.+", "", reply, flags=re.IGNORECASE)
                     cleaned = re.sub(r"VIDEO_PROMPT:\s*.+", "", cleaned, flags=re.IGNORECASE)
                     cleaned = re.sub(r"IMAGE_PROMPT:\s*.+", "", cleaned, flags=re.IGNORECASE)
                     cleaned = re.sub(r"GENERATE_PDF:\s*.+", "", cleaned, flags=re.IGNORECASE)
                     cleaned = re.sub(r"```(?:json)?\s*\{.*?\}\s*```", "", cleaned, flags=re.DOTALL)
                     
-                    # Strip raw python code blocks unless explicitly requested by the user
                     if not user_wants_code:
                         cleaned = re.sub(r"```(?:python)?\s*.*?```", "", cleaned, flags=re.DOTALL).strip()
                     else:
