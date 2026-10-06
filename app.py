@@ -19,117 +19,146 @@ from pypdf import PdfReader
 
 st.set_page_config(page_title="Sagar AI", layout="wide")
 
-# Creative Dynamic Background & Holographic HUD Styling
+# High-Tech Cyberpunk Starfield & Animated Holographic Background
 st.markdown("""
 <style>
-    /* Full App Animated Deep Space Grid Background */
+    /* Full App Animated Cyberpunk Starfield Background */
+    @keyframes pulseGlow {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
     .stApp {
-        background-color: #0b0f19;
+        background-color: #070913;
         background-image: 
-            radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
-            radial-gradient(at 100% 0%, rgba(168, 85, 247, 0.18) 0px, transparent 50%),
-            radial-gradient(at 50% 100%, rgba(14, 165, 233, 0.12) 0px, transparent 50%),
-            linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-        background-size: 100% 100%, 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+            radial-gradient(circle at 15% 20%, rgba(99, 102, 241, 0.25) 0%, transparent 45%),
+            radial-gradient(circle at 85% 15%, rgba(168, 85, 247, 0.28) 0%, transparent 50%),
+            radial-gradient(circle at 50% 85%, rgba(14, 165, 233, 0.22) 0%, transparent 55%),
+            radial-gradient(circle at 80% 80%, rgba(236, 72, 153, 0.18) 0%, transparent 40%),
+            linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 35px 35px, 35px 35px;
         background-attachment: fixed;
+    }
+
+    /* Ambient Floating Glow Ring */
+    .stApp::before {
+        content: "";
+        position: fixed;
+        top: -150px;
+        left: 30%;
+        width: 600px;
+        height: 600px;
+        background: radial-gradient(circle, rgba(129, 140, 248, 0.18) 0%, transparent 70%);
+        pointer-events: none;
+        z-index: 0;
+        filter: blur(40px);
     }
 
     /* Glassmorphism Navigation & Tabs */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-        background: rgba(15, 23, 42, 0.65);
-        backdrop-filter: blur(12px);
-        padding: 6px 12px;
-        border-radius: 12px;
-        border: 1px solid rgba(99, 102, 241, 0.25);
+        gap: 10px;
+        background: rgba(15, 23, 42, 0.75);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        padding: 8px 14px;
+        border-radius: 14px;
+        border: 1px solid rgba(99, 102, 241, 0.35);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
     }
     .stTabs [data-baseweb="tab"] {
-        border-radius: 8px;
+        border-radius: 10px;
         color: #94a3b8;
-        font-weight: 600;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        transition: all 0.25s ease-in-out;
+    }
+    .stTabs [data-baseweb="tab"]:hover {
+        color: #38bdf8;
     }
     .stTabs [aria-selected="true"] {
-        background: linear-gradient(90deg, rgba(99, 102, 241, 0.3), rgba(168, 85, 247, 0.3)) !important;
-        color: #f8fafc !important;
-        border: 1px solid rgba(168, 85, 247, 0.5) !important;
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.4), rgba(168, 85, 247, 0.4)) !important;
+        color: #ffffff !important;
+        border: 1px solid rgba(168, 85, 247, 0.6) !important;
+        box-shadow: 0 0 15px rgba(168, 85, 247, 0.4) !important;
     }
 
-    /* Neon Hologram Header */
+    /* Holographic Cyberpunk Title */
     .sagar-header {
-        background: linear-gradient(90deg, #38bdf8, #818cf8, #c084fc);
+        background: linear-gradient(90deg, #38bdf8, #818cf8, #e879f9);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        font-size: 2.4rem;
+        font-size: 2.6rem;
         font-weight: 900;
         letter-spacing: -0.5px;
         margin-bottom: 2px;
-        text-shadow: 0 0 25px rgba(99, 102, 241, 0.3);
+        text-shadow: 0 0 35px rgba(129, 140, 248, 0.5);
     }
     .sagar-badge {
-        background: linear-gradient(90deg, rgba(30, 58, 138, 0.7), rgba(67, 56, 202, 0.7));
-        color: #e0e7ff;
-        padding: 5px 16px;
+        background: linear-gradient(90deg, rgba(30, 58, 138, 0.8), rgba(88, 28, 135, 0.8));
+        color: #fdf4ff;
+        padding: 6px 18px;
         border-radius: 9999px;
         font-size: 0.85rem;
         font-weight: 700;
-        border: 1px solid #818cf8;
+        border: 1px solid #c084fc;
         display: inline-block;
-        margin-bottom: 14px;
-        box-shadow: 0 0 16px rgba(129, 140, 248, 0.35);
-        backdrop-filter: blur(8px);
+        margin-bottom: 16px;
+        box-shadow: 0 0 18px rgba(192, 132, 252, 0.4);
+        backdrop-filter: blur(10px);
     }
 
-    /* Creative User Message Card */
+    /* Cyberpunk Pilot Bubble */
     .user-bubble-container {
         display: flex;
         justify-content: flex-end;
-        margin-bottom: 16px;
+        margin-bottom: 18px;
         padding-left: 15%;
     }
     .user-bubble {
         background: linear-gradient(135deg, rgba(30, 41, 59, 0.85), rgba(15, 23, 42, 0.95));
-        border: 1px solid rgba(56, 189, 248, 0.6);
+        border: 1px solid rgba(56, 189, 248, 0.7);
         border-right: 4px solid #38bdf8;
         border-radius: 18px 4px 18px 18px;
-        padding: 14px 20px;
+        padding: 14px 22px;
         color: #f8fafc;
-        box-shadow: 0 6px 20px rgba(56, 189, 248, 0.15);
-        backdrop-filter: blur(10px);
+        box-shadow: 0 6px 25px rgba(56, 189, 248, 0.25);
+        backdrop-filter: blur(12px);
     }
     .user-tag {
         font-size: 0.72rem;
         font-weight: 800;
         color: #38bdf8;
         text-transform: uppercase;
-        letter-spacing: 1px;
+        letter-spacing: 1.2px;
         margin-bottom: 4px;
     }
 
-    /* Creative Sagar AI Holographic HUD Card */
+    /* Sagar AI Futuristic HUD Bubble */
     .ai-bubble-container {
         display: flex;
         justify-content: flex-start;
-        margin-bottom: 20px;
+        margin-bottom: 22px;
         padding-right: 8%;
     }
     .ai-bubble {
-        background: linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(24, 24, 47, 0.85));
-        border: 1px solid rgba(99, 102, 241, 0.45);
-        border-left: 4px solid #c084fc;
+        background: linear-gradient(135deg, rgba(20, 24, 48, 0.85), rgba(15, 23, 42, 0.92));
+        border: 1px solid rgba(168, 85, 247, 0.5);
+        border-left: 4px solid #e879f9;
         border-radius: 4px 20px 20px 20px;
-        padding: 18px 24px;
+        padding: 18px 26px;
         color: #f1f5f9;
-        box-shadow: 0 8px 30px rgba(99, 102, 241, 0.22);
-        backdrop-filter: blur(12px);
+        box-shadow: 0 10px 35px rgba(168, 85, 247, 0.22);
+        backdrop-filter: blur(14px);
         width: 100%;
     }
     .ai-tag {
         font-size: 0.75rem;
         font-weight: 800;
-        color: #c084fc;
+        color: #e879f9;
         text-transform: uppercase;
-        letter-spacing: 1.2px;
+        letter-spacing: 1.4px;
         margin-bottom: 8px;
         display: flex;
         align-items: center;
@@ -295,7 +324,7 @@ def build_deployment_zip(app_code, goal_text):
         "short_name": "SagarAI",
         "start_url": "/",
         "display": "standalone",
-        "background_color": "#0b0f19",
+        "background_color": "#070913",
         "theme_color": "#6366f1"
     }, indent=2)
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
@@ -391,7 +420,7 @@ def render_voice_interface(element_id="mainVoice", pitch=1.0, rate=1.0, autoplay
             <button id="{element_id}_in" style="
                 background: linear-gradient(90deg, #6366f1, #a855f7);
                 color: white; border: none; padding: 7px 14px; border-radius: 6px;
-                cursor: pointer; font-weight: bold;">
+                cursor: pointer; font-weight: bold; box-shadow: 0 0 10px rgba(99, 102, 241, 0.4);">
                 🎤 Speak Input
             </button>
             <button id="{element_id}_out" style="
@@ -401,8 +430,8 @@ def render_voice_interface(element_id="mainVoice", pitch=1.0, rate=1.0, autoplay
             </button>
         </div>
         <div id="{element_id}_status" style="
-            font-size: 12px; color: #d1d5db; background: #0f172a; padding: 6px 10px;
-            border-radius: 6px; min-height: 32px; border: 1px solid #6366f1;">
+            font-size: 12px; color: #d1d5db; background: rgba(15, 23, 42, 0.85); padding: 6px 10px;
+            border-radius: 6px; min-height: 32px; border: 1px solid rgba(99, 102, 241, 0.4);">
             Sagar AI Voice Ready. Pitch: {pitch}x | Rate: {rate}x
         </div>
     </div>
@@ -440,7 +469,7 @@ def render_voice_interface(element_id="mainVoice", pitch=1.0, rate=1.0, autoplay
         recog.onstart = () => {{ bIn.innerText = "🛑 Stop"; stat.innerText = "Listening to your voice..."; }};
         recog.onresult = (e) => {{
             let str = '';
-            for (let i = e.resultIndex; i < event.results.length; ++i) str += e.results[i][0].transcript;
+            for (let i = e.resultIndex; i < e.results.length; ++i) str += e.results[i][0].transcript;
             stat.innerText = str;
             navigator.clipboard.writeText(str);
         }};
@@ -483,7 +512,7 @@ def inject_pwa_headers():
         "short_name": "SagarAI",
         "start_url": window.location.href,
         "display": "standalone",
-        "background_color": "#0b0f19",
+        "background_color": "#070913",
         "theme_color": "#6366f1"
     }));
     document.head.appendChild(manifestLink);
@@ -537,7 +566,7 @@ st.subheader("1. Sagar AI Creator (Voice or Text)")
 col_c_text, col_c_mic = st.columns([2, 1])
 
 with col_c_mic:
-    st.write("🎙️️ **Voice Command to Build AI**")
+    st.write("🎙️ **Voice Command to Build AI**")
     render_voice_interface(element_id="factory_creator_voice", pitch=st.session_state.voice_pitch, rate=st.session_state.voice_rate)
 
 with col_c_text:
@@ -624,7 +653,7 @@ if st.session_state.configured_app:
 
     tab1, tab2, tab3, tab4 = st.tabs([
         "⚡ Live Sagar AI Workspace",
-        "🎙 Add Your Own Voice to Sagar AI",
+        "🎙️ Add Your Own Voice to Sagar AI",
         "📱 Install Sagar AI on Mobile",
         "📦 Export Standalone Code & ZIP"
     ])
@@ -682,7 +711,7 @@ if st.session_state.configured_app:
                 " style="
                     background: linear-gradient(90deg, #6366f1, #a855f7);
                     color: white; border: none; padding: 10px 18px; border-radius: 6px;
-                    cursor: pointer; font-weight: bold;">
+                    cursor: pointer; font-weight: bold; box-shadow: 0 0 12px rgba(168, 85, 247, 0.4);">
                     ▶️ Test Sagar AI Voice
                 </button>
             </div>
